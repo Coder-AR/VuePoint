@@ -1,0 +1,23 @@
+{
+  "name": "vuepoint",
+  "version": "1.0.0",
+  "description": "work in progress, check back later.",
+  "homepage": "https://github.com/Coder-AR/VuePoint#readme",
+  "bugs": {
+    "url": "https://github.com/Coder-AR/VuePoint/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Coder-AR/VuePoint.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "AllTest.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
