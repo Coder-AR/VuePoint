@@ -10,12 +10,11 @@ app.use(express.json());
 function parse(data) {
   return typeof data === 'string' ? JSON.parse(data) : data;
 }
-// Smart parser that scans object keys for keywords in order of preference
+
+// Smart fuzzy finder to handle variant district XML property names
 function fuzzyFind(obj, keywords) {
   if (!obj) return 'N/A';
-  
   for (const kw of keywords) {
-    // Find a key that contains our keyword (case-insensitive)
     const foundKey = Object.keys(obj).find(k => k.toLowerCase().includes(kw.toLowerCase()));
     if (foundKey && obj[foundKey]) {
       return obj[foundKey];
@@ -57,7 +56,7 @@ app.get('/', (req, res) => {
         .period-badge { background: #f1f5f9; color: #475569; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 13px; }
         .grade-badge { font-weight: 700; padding: 4px 10px; border-radius: 6px; display: inline-block; }
         
-        /* Dynamically color codes based on passing/failing raw scores */
+        /* Semantics Color Badges */
         .grade-good { background: #dcfce7; color: #15803d; }
         .grade-warning { background: #fef9c3; color: #a16207; }
         .grade-danger { background: #fee2e2; color: #b91c1c; }
@@ -161,6 +160,11 @@ app.get('/', (req, res) => {
             return;
           }
 
+          // --- VANISHING ACT GOES HERE ---
+          // Hide both login steps because confirmation was clean
+          document.getElementById('step1').style.display = 'none';
+          document.getElementById('step2').style.display = 'none';
+
           // 1. Render Student Profile Header Card
           if (result.studentInfo) {
             studentContainer.innerHTML = \`
@@ -180,19 +184,15 @@ app.get('/', (req, res) => {
           if (result.grades && result.grades.length > 0) {
             let rowsHtml = '';
             result.grades.forEach(g => {
-              // Clean up the grade string (e.g., "A+" becomes "A", "b-" becomes "B")
               const cleanGrade = g.grade ? g.grade.trim().toUpperCase() : '';
-              
-              let badgeClass = 'grade-good'; // Default for A, B, P (Pass)
+              let badgeClass = 'grade-good'; 
 
-              // Check the letter grade to assign colors
               if (cleanGrade.startsWith('F') || cleanGrade.startsWith('D') || cleanGrade === 'NP') {
-                badgeClass = 'grade-danger';   // F, D, or No Pass
+                badgeClass = 'grade-danger';   
               } else if (cleanGrade.startsWith('C')) {
-                badgeClass = 'grade-warning';  // C grades
+                badgeClass = 'grade-warning';  
               }
 
-              // FIXED: Added backslashes to escape the nested template literal syntax properly
               rowsHtml += \`
                 <tr>
                   <td><span class="period-badge">P\${g.period}</span></td>
@@ -229,7 +229,6 @@ app.get('/api/search', async (req, res) => {
     }
 
     const districtList = Array.isArray(districts) ? districts : [districts];
-    
     const cleanList = districtList.map(d => ({
       name: d.Name || 'Unknown',
       url: d.PvueURL || 'N/A'
@@ -256,13 +255,8 @@ app.post('/api/login', async (req, res) => {
 
     if (info) {
       studentInfo = {
-        // 1. Prioritize 'formattedname', fallback to any key containing 'name'
         name: fuzzyFind(info, ['formattedname', 'displayname', 'name']),
-        
-        // 2. Look for 'grade' keys
         grade: fuzzyFind(info, ['grade']),
-        
-        // 3. Scan for school names, organizations, or campus indicators
         school: fuzzyFind(info, ['schoolname', 'currentschool', 'organization', 'school', 'org', 'campus'])
       };
     }
@@ -285,7 +279,6 @@ app.post('/api/login', async (req, res) => {
       });
     }
 
-    // Deliver everything cleanly to the front-end
     res.json({
       success: true,
       studentInfo,
