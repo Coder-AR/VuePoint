@@ -245,7 +245,11 @@ app.post('/api/login', async (req, res) => {
       studentInfo = {
         name: info['@_FormattedName'] || info.FormattedName || 'N/A',
         grade: info['@_Grade']         || info.Grade         || 'N/A',
-        school: info['@_SchoolName']    || info.SchoolName    || 'N/A'
+        // Added common fallback keys for different Synergy versions
+        school: info['@_SchoolName']     || info.SchoolName || 
+                info['@_CurrentSchool']  || info.CurrentSchool || 
+                info['@_Organization']   || info.Organization ||
+                'N/A'
       };
     }
 
