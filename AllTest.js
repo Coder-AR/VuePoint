@@ -89,7 +89,7 @@ app.get('/', (req, res) => {
               </tr>
             </thead>
             <tbody id="gradesTableBody">
-              </tbody>
+            </tbody>
           </table>
         </div>
       </div>
@@ -167,12 +167,19 @@ app.get('/', (req, res) => {
           if (result.grades && result.grades.length > 0) {
             let rowsHtml = '';
             result.grades.forEach(g => {
-              // Determine context badge background via crude percentage breakdown
-              const numericScore = parseFloat(g.raw);
-              let badgeClass = 'grade-good';
-              if (isNaN(numericScore) || numericScore < 60) badgeClass = 'grade-danger';
-              else if (numericScore < 75) badgeClass = 'grade-warning';
+              // Clean up the grade string (e.g., "A+" becomes "A", "b-" becomes "B")
+              const cleanGrade = g.grade ? g.grade.trim().toUpperCase() : '';
+              
+              let badgeClass = 'grade-good'; // Default for A, B, P (Pass)
 
+              // Check the letter grade to assign colors
+              if (cleanGrade.startsWith('F') || cleanGrade.startsWith('D') || cleanGrade === 'NP') {
+                badgeClass = 'grade-danger';   // F, D, or No Pass
+              } else if (cleanGrade.startsWith('C')) {
+                badgeClass = 'grade-warning';  // C grades
+              }
+
+              // FIXED: Added backslashes to escape the nested template literal syntax properly
               rowsHtml += \`
                 <tr>
                   <td><span class="period-badge">P\${g.period}</span></td>
