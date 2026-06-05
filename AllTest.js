@@ -5,57 +5,95 @@ const StudentVue = require('studentvue.js');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Middleware to understand JSON data sent from the browser
 app.use(express.json());
 
 function parse(data) {
   return typeof data === 'string' ? JSON.parse(data) : data;
 }
-//Generated Using Gemini 3.1 Pro
+
 // 1. SERVE THE USER INTERFACE
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
     <html>
     <head>
-      <title>VuePoint Login</title>
+      <title>VuePoint Portal</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <style>
-        body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; line-height: 1.6; }
-        .box { border: 1px solid #ccc; padding: 20px; margin-bottom: 20px; border-radius: 8px; background: #f9f9f9; }
-        input, select, button { padding: 8px; margin: 5px 0 15px 0; width: 100%; box-sizing: border-box; }
-        button { background: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; }
-        button:hover { background: #0056b3; }
-        pre { background: #222; color: #0f0; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; background: #f4f6f9; color: #333; }
+        .box { border: 1px solid #e1e4e8; padding: 25px; margin-bottom: 20px; border-radius: 12px; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        h2, h3 { margin-top: 0; color: #1e293b; }
+        label { font-weight: 600; font-size: 14px; color: #475569; display: block; margin-bottom: 5px; }
+        input, select, button { padding: 10px; margin: 5px 0 15px 0; width: 100%; box-sizing: border-box; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 15px; }
+        input:focus, select:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+        button { background: #2563eb; color: white; border: none; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+        button:hover { background: #1d4ed8; }
+        
+        /* Student Card Layout */
+        .student-card { display: flex; align-items: center; gap: 20px; background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; padding: 20px; border-radius: 12px; margin-bottom: 25px; }
+        .student-details h3 { margin: 0 0 5px 0; color: white; font-size: 22px; }
+        .student-details p { margin: 2px 0; opacity: 0.9; font-size: 14px; }
+
+        /* Grades Table Styling */
+        .table-container { width: 100%; overflow-x: auto; background: white; border-radius: 12px; border: 1px solid #e1e4e8; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background: #f8fafc; padding: 14px; font-weight: 600; color: #64748b; border-bottom: 1px solid #e2e8f0; font-size: 13px; text-transform: uppercase; }
+        td { padding: 14px; border-bottom: 1px solid #f1f5f9; font-size: 15px; }
+        tr:last-child td { border-bottom: none; }
+        
+        .period-badge { background: #f1f5f9; color: #475569; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 13px; }
+        .grade-badge { font-weight: 700; padding: 4px 10px; border-radius: 6px; display: inline-block; }
+        
+        /* Dynamically color codes based on passing/failing raw scores */
+        .grade-good { background: #dcfce7; color: #15803d; }
+        .grade-warning { background: #fef9c3; color: #a16207; }
+        .grade-danger { background: #fee2e2; color: #b91c1c; }
+        
+        .loading { text-align: center; color: #64748b; font-weight: 500; padding: 40px; }
       </style>
     </head>
     <body>
-      <h2>VuePoint Login</h2>
+      <h2>VuePoint Portal</h2>
 
       <div class="box" id="step1">
-        <label><b>1. Enter Zip Code:</b></label>
-        <input type="text" id="zipInput" placeholder="e.g., 00501">
+        <label>1. Enter Zip Code</label>
+        <input type="text" id="zipInput" placeholder="e.g., 98006">
         <button onclick="searchDistricts()">Search Districts</button>
-        <div id="searchStatus" style="color: red;"></div>
+        <div id="searchStatus" style="color: #ef4444; font-size: 14px; margin-top: -5px;"></div>
       </div>
 
       <div class="box" id="step2" style="display: none;">
-        <label><b>2. Select District:</b></label>
+        <label>2. Select District</label>
         <select id="districtSelect"></select>
 
-        <label><b>Username:</b></label>
+        <label>Username</label>
         <input type="text" id="usernameInput" placeholder="Enter username">
 
-        <label><b>Password:</b></label>
+        <label>Password</label>
         <input type="password" id="passwordInput" placeholder="Enter password">
 
         <button onclick="login()">Log In & Fetch Data</button>
       </div>
 
-      <div id="outputBox" style="display: none;">
-        <h3>Results:</h3>
-        <pre id="outputText">Waiting...</pre>
+      <div id="dashboardBox" style="display: none;">
+        <div id="studentContainer"></div>
+        
+        <h3>Current Grades</h3>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 80px;">Period</th>
+                <th>Course Title</th>
+                <th style="width: 120px; text-align: right;">Grade</th>
+              </tr>
+            </thead>
+            <tbody id="gradesTableBody">
+              </tbody>
+          </table>
+        </div>
       </div>
-
+      //Generated with Gemini 3.5 Flash
       <script>
         async function searchDistricts() {
           const zip = document.getElementById('zipInput').value;
@@ -89,11 +127,13 @@ app.get('/', (req, res) => {
           const user = document.getElementById('usernameInput').value;
           const pass = document.getElementById('passwordInput').value;
           
-          const outputBox = document.getElementById('outputBox');
-          const outputText = document.getElementById('outputText');
+          const dashboardBox = document.getElementById('dashboardBox');
+          const studentContainer = document.getElementById('studentContainer');
+          const gradesTableBody = document.getElementById('gradesTableBody');
           
-          outputBox.style.display = 'block';
-          outputText.innerText = 'Logging in... Please wait.';
+          dashboardBox.style.display = 'block';
+          studentContainer.innerHTML = '<div class="loading">Authenticating and loading secure data...</div>';
+          gradesTableBody.innerHTML = '';
 
           const response = await fetch('/api/login', {
             method: 'POST',
@@ -101,8 +141,52 @@ app.get('/', (req, res) => {
             body: JSON.stringify({ url, user, pass })
           });
 
-          const resultText = await response.text();
-          outputText.innerText = resultText;
+          const result = await response.json();
+
+          if (!result.success) {
+            studentContainer.innerHTML = \`<div style="color: #ef4444; padding: 20px; font-weight: bold;">Error: \${result.message}</div>\`;
+            return;
+          }
+
+          // 1. Render Student Profile Header Card
+          if (result.studentInfo) {
+            studentContainer.innerHTML = \`
+              <div class="student-card">
+                <div class="student-details">
+                  <h3>\${result.studentInfo.name}</h3>
+                  <p><b>School:</b> \${result.studentInfo.school}</p>
+                  <p><b>Grade Level:</b> \${result.studentInfo.grade}</p>
+                </div>
+              </div>
+            \`;
+          } else {
+            studentContainer.innerHTML = '<p>No profile identity properties returned.</p>';
+          }
+
+          // 2. Render Grades List natively into the Data Table
+          if (result.grades && result.grades.length > 0) {
+            let rowsHtml = '';
+            result.grades.forEach(g => {
+              // Determine context badge background via crude percentage breakdown
+              const numericScore = parseFloat(g.raw);
+              let badgeClass = 'grade-good';
+              if (isNaN(numericScore) || numericScore < 60) badgeClass = 'grade-danger';
+              else if (numericScore < 75) badgeClass = 'grade-warning';
+
+              rowsHtml += \`
+                <tr>
+                  <td><span class="period-badge">P\${g.period}</span></td>
+                  <td><b>\${g.title}</b></td>
+                  <td style="text-align: right;">
+                    <span class="grade-badge \${badgeClass}">\${g.grade} (\${g.raw}%)</span>
+                  </td>
+                </tr>
+              \`;
+            });
+            gradesTableBody.innerHTML = rowsHtml;
+          } else {
+            gradesTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#64748b;">No active layout entries or gradebook marks found.</td></tr>';
+          }
         }
       </script>
     </body>
@@ -137,52 +221,54 @@ app.get('/api/search', async (req, res) => {
   }
 });
 
-// 3. API ENDPOINT: Login and Fetch Data
+// 3. API ENDPOINT: Login and Fetch Data (Returns Clean Structured JSON Objects)
 app.post('/api/login', async (req, res) => {
   const { url, user, pass } = req.body;
-  if (!url || !user || !pass) return res.status(400).send("Missing credentials.");
+  if (!url || !user || !pass) return res.status(400).json({ success: false, message: "Missing credentials." });
 
-  let output = [];
   try {
     const client = await StudentVue.login(url, user, pass);
-    output.push('Logged in successfully.\n');
 
     // Fetch Student Info
     const infoData = await client.getStudentInfo();
     const info = parse(infoData)?.StudentInfo;
+    let studentInfo = null;
 
-    if (!info) {
-      output.push('No student info found.');
-    } else {
-      output.push('=== Student Info ===');
-      output.push(`Name:   ${info['@_FormattedName'] || info.FormattedName || 'N/A'}`);
-      output.push(`Grade:  ${info['@_Grade']         || info.Grade         || 'N/A'}`);
-      output.push(`School: ${info['@_SchoolName']    || info.SchoolName    || 'N/A'}`);
+    if (info) {
+      studentInfo = {
+        name: info['@_FormattedName'] || info.FormattedName || 'N/A',
+        grade: info['@_Grade']         || info.Grade         || 'N/A',
+        school: info['@_SchoolName']    || info.SchoolName    || 'N/A'
+      };
     }
 
     // Fetch Grades
     const gradeData = await client.getGradebook();
     const courses = parse(gradeData)?.Gradebook?.Courses?.Course;
+    let grades = [];
 
-    if (!courses) {
-      output.push('\nNo gradebook data found.');
-    } else {
+    if (courses) {
       const courseList = Array.isArray(courses) ? courses : [courses];
-      output.push('\n=== Grades ===');
-      courseList.forEach(course => {
-        const title  = course.Title  || 'Unknown';
-        const period = course.Period || '?';
+      grades = courseList.map(course => {
         const currentMark = course.Marks?.Mark?.[0] || course.Marks?.Mark;
-        const grade = currentMark?.CalculatedScoreString || 'N/A';
-        const raw   = currentMark?.CalculatedScoreRaw    || 'N/A';
-        
-        output.push(`  [P${period}] ${title}: ${grade} (${raw}%)`);
+        return {
+          title: course.Title || 'Unknown',
+          period: course.Period || '?',
+          grade: currentMark?.CalculatedScoreString || 'N/A',
+          raw: currentMark?.CalculatedScoreRaw || 'N/A'
+        };
       });
     }
 
-    res.send(output.join('\n'));
+    // Deliver everything cleanly to the front-end
+    res.json({
+      success: true,
+      studentInfo,
+      grades
+    });
+
   } catch (err) {
-    res.status(500).send(`Login Error: ${err.message}`);
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
