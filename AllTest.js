@@ -18,7 +18,7 @@ app.get('/', (req, res) => {
     <!DOCTYPE html>
     <html>
     <head>
-      <title>StudentVue Login</title>
+      <title>VuePoint Login</title>
       <style>
         body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; line-height: 1.6; }
         .box { border: 1px solid #ccc; padding: 20px; margin-bottom: 20px; border-radius: 8px; background: #f9f9f9; }
@@ -29,11 +29,11 @@ app.get('/', (req, res) => {
       </style>
     </head>
     <body>
-      <h2>StudentVue Portal</h2>
+      <h2>VuePoint Login</h2>
 
       <div class="box" id="step1">
         <label><b>1. Enter Zip Code:</b></label>
-        <input type="text" id="zipInput" placeholder="e.g., 98006">
+        <input type="text" id="zipInput" placeholder="e.g., 00501">
         <button onclick="searchDistricts()">Search Districts</button>
         <div id="searchStatus" style="color: red;"></div>
       </div>
@@ -43,7 +43,7 @@ app.get('/', (req, res) => {
         <select id="districtSelect"></select>
 
         <label><b>Username:</b></label>
-        <input type="text" id="usernameInput" placeholder="s-raja">
+        <input type="text" id="usernameInput" placeholder="Enter username">
 
         <label><b>Password:</b></label>
         <input type="password" id="passwordInput" placeholder="Enter password">
