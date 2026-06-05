@@ -57,7 +57,7 @@ app.get('/', (req, res) => {
 
       <div class="box" id="step1">
         <label>1. Enter Zip Code</label>
-        <input type="text" id="zipInput" placeholder="e.g., 98006">
+        <input type="text" id="zipInput" placeholder="e.g., 00501">
         <button onclick="searchDistricts()">Search Districts</button>
         <div id="searchStatus" style="color: #ef4444; font-size: 14px; margin-top: -5px;"></div>
       </div>
