@@ -167,27 +167,21 @@ app.get('/', (req, res) => {
           if (result.grades && result.grades.length > 0) {
             let rowsHtml = '';
             result.grades.forEach(g => {
-              // Clean up the grade string (e.g., "A+" becomes "A", "b-" becomes "B")
-              const cleanGrade = g.grade ? g.grade.trim().toUpperCase() : '';
-              
-              let badgeClass = 'grade-good'; // Default for A, B, P (Pass)
+              // Determine context badge background via crude percentage breakdown
+              const numericScore = parseFloat(g.raw);
+              let badgeClass = 'grade-good';
+              if (isNaN(numericScore) || numericScore < 60) badgeClass = 'grade-danger';
+              else if (numericScore < 75) badgeClass = 'grade-warning';
 
-              // Check the letter grade to assign colors
-              if (cleanGrade.startsWith('F') || cleanGrade.startsWith('D') || cleanGrade === 'NP') {
-                badgeClass = 'grade-danger';   // F, D, or No Pass
-              } else if (cleanGrade.startsWith('C')) {
-                badgeClass = 'grade-warning';  // C grades
-              }
-
-              rowsHtml += `
+              rowsHtml += \`
                 <tr>
-                  <td><span class="period-badge">P${g.period}</span></td>
-                  <td><b>${g.title}</b></td>
+                  <td><span class="period-badge">P\${g.period}</span></td>
+                  <td><b>\${g.title}</b></td>
                   <td style="text-align: right;">
-                    <span class="grade-badge ${badgeClass}">${g.grade} (${g.raw}%)</span>
+                    <span class="grade-badge \${badgeClass}">\${g.grade} (\${g.raw}%)</span>
                   </td>
                 </tr>
-              `;
+              \`;
             });
             gradesTableBody.innerHTML = rowsHtml;
           } else {
