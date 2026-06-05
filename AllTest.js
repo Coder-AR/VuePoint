@@ -93,7 +93,7 @@ app.get('/', (req, res) => {
           </table>
         </div>
       </div>
-      //Generated with Gemini 3.5 Flash
+      // Generated with Gemini 3.5 Flash
       <script>
         async function searchDistricts() {
           const zip = document.getElementById('zipInput').value;
