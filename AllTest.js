@@ -3,7 +3,7 @@ const express = require('express');
 const StudentVue = require('studentvue.js');
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 // Middleware to understand JSON data sent from the browser
 app.use(express.json());
