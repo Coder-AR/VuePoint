@@ -10,6 +10,19 @@ app.use(express.json());
 function parse(data) {
   return typeof data === 'string' ? JSON.parse(data) : data;
 }
+// Smart parser that scans object keys for keywords in order of preference
+function fuzzyFind(obj, keywords) {
+  if (!obj) return 'N/A';
+  
+  for (const kw of keywords) {
+    // Find a key that contains our keyword (case-insensitive)
+    const foundKey = Object.keys(obj).find(k => k.toLowerCase().includes(kw.toLowerCase()));
+    if (foundKey && obj[foundKey]) {
+      return obj[foundKey];
+    }
+  }
+  return 'N/A';
+}
 
 // 1. SERVE THE USER INTERFACE
 app.get('/', (req, res) => {
@@ -243,13 +256,14 @@ app.post('/api/login', async (req, res) => {
 
     if (info) {
       studentInfo = {
-        name: info['@_FormattedName'] || info.FormattedName || 'N/A',
-        grade: info['@_Grade']         || info.Grade         || 'N/A',
-        // Added common fallback keys for different Synergy versions
-        school: info['@_SchoolName']     || info.SchoolName || 
-                info['@_CurrentSchool']  || info.CurrentSchool || 
-                info['@_Organization']   || info.Organization ||
-                'N/A'
+        // 1. Prioritize 'formattedname', fallback to any key containing 'name'
+        name: fuzzyFind(info, ['formattedname', 'displayname', 'name']),
+        
+        // 2. Look for 'grade' keys
+        grade: fuzzyFind(info, ['grade']),
+        
+        // 3. Scan for school names, organizations, or campus indicators
+        school: fuzzyFind(info, ['schoolname', 'currentschool', 'organization', 'school', 'org', 'campus'])
       };
     }
 
