@@ -22,6 +22,25 @@ function fuzzyFind(obj, keywords) {
   return 'N/A';
 }
 
+// Recursively hunts down every message object hidden anywhere in the data tree
+function findAllMessages(obj, results = []) {
+  if (!obj || typeof obj !== 'object') return results;
+
+  // If this specific object has a Subject property, it's a message!
+  if (obj.Subject || obj.SubjectNoHTML || obj['@_Subject']) {
+    results.push(obj);
+    return results;
+  }
+
+  // Otherwise, keep digging deeper into child objects or arrays
+  for (const key in obj) {
+    if (typeof obj[key] === 'object') {
+      findAllMessages(obj[key], results);
+    }
+  }
+  return results;
+}
+
 // 1. SERVE THE USER INTERFACE
 app.get('/', (req, res) => {
   res.send(`
@@ -290,30 +309,25 @@ app.post('/api/login', async (req, res) => {
         };
       });
     }
-    // Mail (FIXED: Support deep nesting for Synergy Mail + Module name fallbacks)
+    // Mail (FIXED: Uses recursive deep-scanning to defeat dynamic XML arrays)
     const mailData = await client.getMessages();
     const parsedMail = parse(mailData);
     
-    // 1. Traverse down the modern Synergy Mail nested object tree
-    // 2. Fall back to traditional/legacy paths if a different district uses them
-    const messages = parsedMail?.PXPMessagesData?.SynergyMailMessageListingByStudents?.SynergyMailMessageListingByStudent?.SynergyMailMessageListings?.SynergyMailMessageListing ||
-                     parsedMail?.MessageListings?.MessageListing || 
-                     parsedMail?.GetStudentMessagesResult?.MessageListings?.MessageListing ||
-                     parsedMail?.GetStudentMessages?.MessageListings?.MessageListing;
+    // Scan the entire payload automatically for message objects
+    const discoveredMessages = findAllMessages(parsedMail);
                      
     let mail = [];
-    if (messages) {
-      // Safely turn single message objects into an array if there's only 1 message
-      const mailList = Array.isArray(messages) ? messages : [messages];
-      
-      mail = mailList.map(m => ({
-        // Use Module (e.g. "ReportCard") as the sender if a traditional human "From" isn't provided
+    if (discoveredMessages && discoveredMessages.length > 0) {
+      mail = discoveredMessages.map(m => ({
+        // Fall back to Module or 'System Alert' if it's an automated notification without a human sender
         from:    m.From       || m['@_From']       || m.Module  || 'System Alert',
         subject: m.Subject    || m['@_Subject']    || m.SubjectNoHTML || '(No Subject)',
         date:    m.BeginDate  || m['@_BeginDate']  || '',
-        read:    m.Read       || m['@_Read']       || 'false'
+        read:    String(m.Read || m['@_Read'] || 'false').toLowerCase() === 'true' ? 'true' : 'false'
       }));
     }
+
+    res.json({ success: true, studentInfo, grades, mail });
 
     res.json({ success: true, studentInfo, grades, mail });
 
