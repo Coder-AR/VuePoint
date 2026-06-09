@@ -80,6 +80,42 @@ function findGPADeep(obj) {
   return null;
 }
 
+// Manually calculates an unweighted (or rough weighted) GPA from current term grades
+function calculateTermGPAManually(grades) {
+  if (!grades || grades.length === 0) return 'N/A';
+
+  // Standard 4.0 scale mapping table
+  const gradeScale = {
+    'A': 4.0, 'B': 3.0, 'C': 2.0, 'D': 1.0, 'F': 0.0, 'E': 0.0
+  };
+
+  let totalPoints = 0;
+  let gradedClassesCount = 0;
+
+  for (const course of grades) {
+    if (!course.grade) continue;
+
+    // Grab the base letter grade (e.g., converts "A-" or "B+" to "A" or "B")
+    const baseLetter = course.grade.trim().charAt(0).toUpperCase();
+
+    if (baseLetter in gradeScale) {
+      let points = gradeScale[baseLetter];
+
+      // OPTIONAL: Check course title for an Honors/AP/IB weighted GPA bump (+1.0)
+      const title = course.title.toUpperCase();
+      if (title.includes('AP') || title.includes('IB') || title.includes('HONORS') || title.includes('ADVANCED')) {
+        points += 1.0; 
+      }
+
+      totalPoints += points;
+      gradedClassesCount++;
+    }
+  }
+
+  // Return average rounded to 2 decimal places
+  return gradedClassesCount > 0 ? (totalPoints / gradedClassesCount).toFixed(2) : 'N/A';
+}
+
 // 1. SERVE THE USER INTERFACE
 app.get('/', (req, res) => {
   res.send(`
@@ -347,7 +383,7 @@ app.post('/api/login', async (req, res) => {
     let discoveredGpa = findGPADeep(parsedGradebook) || findGPADeep(parsedInfo);
     
     // Fallback adjustment
-    const finalGpa = (discoveredGpa && discoveredGpa !== 'N/A') ? String(discoveredGpa).trim() : 'N/A';
+    let finalGpa = (discoveredGpa && discoveredGpa !== 'N/A') ? String(discoveredGpa).trim() : 'N/A';
 
     let grades = [];
     if (courses) {
@@ -361,6 +397,11 @@ app.post('/api/login', async (req, res) => {
           raw:    currentMark?.CalculatedScoreRaw    || 'N/A'
         };
       });
+    }
+
+    // NEW: If official server GPA is blocked, calculate the local Term GPA
+    if (finalGpa === 'N/A' && grades.length > 0) {
+      finalGpa = calculateTermGPAManually(grades) + " (Term Est.)";
     }
 
     // Notifications
