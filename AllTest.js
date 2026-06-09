@@ -80,11 +80,11 @@ function findGPADeep(obj) {
   return null;
 }
 
-// Manually calculates an unweighted (or rough weighted) GPA from current term grades
+// Calculates a strict unweighted GPA capped at 4.0 from current term grades
 function calculateTermGPAManually(grades) {
   if (!grades || grades.length === 0) return 'N/A';
 
-  // Standard 4.0 scale mapping table
+  // Strict unweighted 4.0 scale mapping table
   const gradeScale = {
     'A': 4.0, 'B': 3.0, 'C': 2.0, 'D': 1.0, 'F': 0.0, 'E': 0.0
   };
@@ -95,19 +95,11 @@ function calculateTermGPAManually(grades) {
   for (const course of grades) {
     if (!course.grade) continue;
 
-    // Grab the base letter grade (e.g., converts "A-" or "B+" to "A" or "B")
+    // Grab the base letter grade (e.g., converts "A-" or "A+" to just "A")
     const baseLetter = course.grade.trim().charAt(0).toUpperCase();
 
     if (baseLetter in gradeScale) {
-      let points = gradeScale[baseLetter];
-
-      // OPTIONAL: Check course title for an Honors/AP/IB weighted GPA bump (+1.0)
-      const title = course.title.toUpperCase();
-      if (title.includes('AP') || title.includes('IB') || title.includes('HONORS') || title.includes('ADVANCED')) {
-        points += 1.0; 
-      }
-
-      totalPoints += points;
+      totalPoints += gradeScale[baseLetter];
       gradedClassesCount++;
     }
   }
@@ -399,9 +391,9 @@ app.post('/api/login', async (req, res) => {
       });
     }
 
-    // NEW: If official server GPA is blocked, calculate the local Term GPA
+    // If official server GPA is blocked, calculate the local Unweighted Term GPA
     if (finalGpa === 'N/A' && grades.length > 0) {
-      finalGpa = calculateTermGPAManually(grades) + " (Term Est.)";
+      finalGpa = calculateTermGPAManually(grades) + " (Unweighted)";
     }
 
     // Notifications
