@@ -290,11 +290,14 @@ app.post('/api/login', async (req, res) => {
         };
       });
     }
-
-    // Mail
-    const mailData = await client.getMail();
+    // Mail (FIXED: Changed getMail() to getMessages()) //Fixed with Gemini Flash 3.5
+    const mailData = await client.getMessages();
     const parsedMail = parse(mailData);
-    const messages = parsedMail?.MessageListings?.MessageListing;
+    
+    // Synergy XML often nests this under MessageListings or GetStudentMessagesResult
+    const messages = parsedMail?.MessageListings?.MessageListing || 
+                     parsedMail?.GetStudentMessagesResult?.MessageListings?.MessageListing;
+                     
     let mail = [];
     if (messages) {
       const mailList = Array.isArray(messages) ? messages : [messages];
