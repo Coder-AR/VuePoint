@@ -290,22 +290,25 @@ app.post('/api/login', async (req, res) => {
         };
       });
     }
-    // Mail (FIXED: Changed getMail() to getMessages()) //Fixed with Gemini Flash 3.5
+    // Mail (FIXED: Added widespread root and property variations)
     const mailData = await client.getMessages();
     const parsedMail = parse(mailData);
+    console.log("--- RAW MAIL DATA FROM DISTRICT ---", JSON.stringify(parsedMail, null, 2));
     
-    // Synergy XML often nests this under MessageListings or GetStudentMessagesResult
+    // Scan all known Synergy XML parent containers
     const messages = parsedMail?.MessageListings?.MessageListing || 
-                     parsedMail?.GetStudentMessagesResult?.MessageListings?.MessageListing;
+                     parsedMail?.GetStudentMessagesResult?.MessageListings?.MessageListing ||
+                     parsedMail?.GetStudentMessages?.MessageListings?.MessageListing ||
+                     parsedMail?.StudentMessages?.MessageListings?.MessageListing;
                      
     let mail = [];
     if (messages) {
       const mailList = Array.isArray(messages) ? messages : [messages];
       mail = mailList.map(m => ({
-        from:    m.From       || m['@_From']       || 'Unknown',
-        subject: m.Subject    || m['@_Subject']    || '(No Subject)',
-        date:    m.BeginDate  || m['@_BeginDate']  || '',
-        read:    m.Read       || m['@_Read']       || 'false'
+        from:    m.From       || m['@_From']       || m.from    || 'Unknown',
+        subject: m.Subject    || m['@_Subject']    || m.subject || '(No Subject)',
+        date:    m.BeginDate  || m['@_BeginDate']  || m.date    || '',
+        read:    m.Read       || m['@_Read']       || m.read    || 'false'
       }));
     }
 
