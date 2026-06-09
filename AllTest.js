@@ -392,7 +392,7 @@ app.post('/api/login', async (req, res) => {
     }
 
     if (finalGpa === 'N/A' && grades.length > 0) {
-      finalGpa = calculateTermGPAManually(grades) + " (Unweighted)";
+      finalGpa = calculateTermGPAManually(grades) + " (Term)";
     }
 
     // Notifications
