@@ -11,7 +11,6 @@ function parse(data) {
   return typeof data === 'string' ? JSON.parse(data) : data;
 }
 
-// Smart fuzzy finder to handle variant district XML property names
 function fuzzyFind(obj, keywords) {
   if (!obj) return 'N/A';
   for (const kw of keywords) {
@@ -40,27 +39,24 @@ app.get('/', (req, res) => {
         input:focus, select:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
         button { background: #2563eb; color: white; border: none; cursor: pointer; font-weight: bold; transition: background 0.2s; }
         button:hover { background: #1d4ed8; }
-        
-        /* Student Card Layout */
+
         .student-card { display: flex; align-items: center; gap: 20px; background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; padding: 20px; border-radius: 12px; margin-bottom: 25px; }
         .student-details h3 { margin: 0 0 5px 0; color: white; font-size: 22px; }
         .student-details p { margin: 2px 0; opacity: 0.9; font-size: 14px; }
 
-        /* Grades Table Styling */
-        .table-container { width: 100%; overflow-x: auto; background: white; border-radius: 12px; border: 1px solid #e1e4e8; }
+        .table-container { width: 100%; overflow-x: auto; background: white; border-radius: 12px; border: 1px solid #e1e4e8; margin-bottom: 25px; }
         table { width: 100%; border-collapse: collapse; text-align: left; }
         th { background: #f8fafc; padding: 14px; font-weight: 600; color: #64748b; border-bottom: 1px solid #e2e8f0; font-size: 13px; text-transform: uppercase; }
         td { padding: 14px; border-bottom: 1px solid #f1f5f9; font-size: 15px; }
         tr:last-child td { border-bottom: none; }
-        
+
         .period-badge { background: #f1f5f9; color: #475569; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 13px; }
         .grade-badge { font-weight: 700; padding: 4px 10px; border-radius: 6px; display: inline-block; }
-        
-        /* Semantics Color Badges */
-        .grade-good { background: #dcfce7; color: #15803d; }
+        .grade-good    { background: #dcfce7; color: #15803d; }
         .grade-warning { background: #fef9c3; color: #a16207; }
-        .grade-danger { background: #fee2e2; color: #b91c1c; }
-        
+        .grade-danger  { background: #fee2e2; color: #b91c1c; }
+        .unread-dot { display: inline-block; width: 8px; height: 8px; background: #2563eb; border-radius: 50%; margin-right: 6px; }
+
         .loading { text-align: center; color: #64748b; font-weight: 500; padding: 40px; }
       </style>
     </head>
@@ -89,7 +85,7 @@ app.get('/', (req, res) => {
 
       <div id="dashboardBox" style="display: none;">
         <div id="studentContainer"></div>
-        
+
         <h3>Current Grades</h3>
         <div class="table-container">
           <table>
@@ -97,15 +93,28 @@ app.get('/', (req, res) => {
               <tr>
                 <th style="width: 80px;">Period</th>
                 <th>Course Title</th>
-                <th style="width: 120px; text-align: right;">Grade</th>
+                <th style="width: 140px; text-align: right;">Grade</th>
               </tr>
             </thead>
-            <tbody id="gradesTableBody">
-            </tbody>
+            <tbody id="gradesTableBody"></tbody>
+          </table>
+        </div>
+
+        <h3>Mail</h3>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>From</th>
+                <th>Subject</th>
+                <th style="width: 130px;">Date</th>
+              </tr>
+            </thead>
+            <tbody id="mailTableBody"></tbody>
           </table>
         </div>
       </div>
-      
+
       <script>
         async function searchDistricts() {
           const zip = document.getElementById('zipInput').value;
@@ -138,14 +147,16 @@ app.get('/', (req, res) => {
           const url = document.getElementById('districtSelect').value;
           const user = document.getElementById('usernameInput').value;
           const pass = document.getElementById('passwordInput').value;
-          
+
           const dashboardBox = document.getElementById('dashboardBox');
           const studentContainer = document.getElementById('studentContainer');
           const gradesTableBody = document.getElementById('gradesTableBody');
-          
+          const mailTableBody = document.getElementById('mailTableBody');
+
           dashboardBox.style.display = 'block';
           studentContainer.innerHTML = '<div class="loading">Authenticating and loading secure data...</div>';
           gradesTableBody.innerHTML = '';
+          mailTableBody.innerHTML = '';
 
           const response = await fetch('/api/login', {
             method: 'POST',
@@ -156,56 +167,59 @@ app.get('/', (req, res) => {
           const result = await response.json();
 
           if (!result.success) {
-            studentContainer.innerHTML = \`<div style="color: #ef4444; padding: 20px; font-weight: bold;">Error: \${result.message}</div>\`;
+            studentContainer.innerHTML = '<div style="color: #ef4444; padding: 20px; font-weight: bold;">Error: ' + result.message + '</div>';
             return;
           }
 
-          // --- VANISHING ACT GOES HERE ---
-          // Hide both login steps because confirmation was clean
           document.getElementById('step1').style.display = 'none';
           document.getElementById('step2').style.display = 'none';
 
-          // 1. Render Student Profile Header Card
+          // Render Student Card
           if (result.studentInfo) {
-            studentContainer.innerHTML = \`
-              <div class="student-card">
-                <div class="student-details">
-                  <h3>\${result.studentInfo.name}</h3>
-                  <p><b>School:</b> \${result.studentInfo.school}</p>
-                  <p><b>Grade Level:</b> \${result.studentInfo.grade}</p>
-                </div>
-              </div>
-            \`;
+            studentContainer.innerHTML =
+              '<div class="student-card">' +
+                '<div class="student-details">' +
+                  '<h3>' + result.studentInfo.name + '</h3>' +
+                  '<p><b>School:</b> ' + result.studentInfo.school + '</p>' +
+                  '<p><b>Grade Level:</b> ' + result.studentInfo.grade + '</p>' +
+                '</div>' +
+              '</div>';
           } else {
-            studentContainer.innerHTML = '<p>No profile identity properties returned.</p>';
+            studentContainer.innerHTML = '<p>No profile info returned.</p>';
           }
 
-          // 2. Render Grades List natively into the Data Table
+          // Render Grades
           if (result.grades && result.grades.length > 0) {
-            let rowsHtml = '';
-            result.grades.forEach(g => {
+            gradesTableBody.innerHTML = result.grades.map(g => {
               const cleanGrade = g.grade ? g.grade.trim().toUpperCase() : '';
-              let badgeClass = 'grade-good'; 
-
+              let badgeClass = 'grade-good';
               if (cleanGrade.startsWith('F') || cleanGrade.startsWith('D') || cleanGrade === 'NP') {
-                badgeClass = 'grade-danger';   
+                badgeClass = 'grade-danger';
               } else if (cleanGrade.startsWith('C')) {
-                badgeClass = 'grade-warning';  
+                badgeClass = 'grade-warning';
               }
-
-              rowsHtml += \`
-                <tr>
-                  <td><span class="period-badge">P\${g.period}</span></td>
-                  <td><b>\${g.title}</b></td>
-                  <td style="text-align: right;">
-                    <span class="grade-badge \${badgeClass}">\${g.grade} (\${g.raw}%)</span>
-                  </td>
-                </tr>
-              \`;
-            });
-            gradesTableBody.innerHTML = rowsHtml;
+              return '<tr>' +
+                '<td><span class="period-badge">P' + g.period + '</span></td>' +
+                '<td><b>' + g.title + '</b></td>' +
+                '<td style="text-align: right;"><span class="grade-badge ' + badgeClass + '">' + g.grade + ' (' + g.raw + '%)</span></td>' +
+              '</tr>';
+            }).join('');
           } else {
-            gradesTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#64748b;">No active layout entries or gradebook marks found.</td></tr>';
+            gradesTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#64748b;">No gradebook data found.</td></tr>';
+          }
+
+          // Render Mail
+          if (result.mail && result.mail.length > 0) {
+            mailTableBody.innerHTML = result.mail.map(m => {
+              const unread = m.read === 'false' || m.read === false;
+              return '<tr style="' + (unread ? 'font-weight: bold;' : '') + '">' +
+                '<td>' + (unread ? '<span class="unread-dot"></span>' : '') + m.from + '</td>' +
+                '<td>' + m.subject + '</td>' +
+                '<td style="color: #64748b; font-size: 13px;">' + m.date + '</td>' +
+              '</tr>';
+            }).join('');
+          } else {
+            mailTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#64748b;">No mail found.</td></tr>';
           }
         }
       </script>
@@ -240,7 +254,7 @@ app.get('/api/search', async (req, res) => {
   }
 });
 
-// 3. API ENDPOINT: Login and Fetch Data (Returns Clean Structured JSON Objects)
+// 3. API ENDPOINT: Login, Fetch Grades + Student Info + Mail
 app.post('/api/login', async (req, res) => {
   const { url, user, pass } = req.body;
   if (!url || !user || !pass) return res.status(400).json({ success: false, message: "Missing credentials." });
@@ -248,42 +262,51 @@ app.post('/api/login', async (req, res) => {
   try {
     const client = await StudentVue.login(url, user, pass);
 
-    // Fetch Student Info
+    // Student Info
     const infoData = await client.getStudentInfo();
     const info = parse(infoData)?.StudentInfo;
     let studentInfo = null;
-
     if (info) {
       studentInfo = {
-        name: fuzzyFind(info, ['formattedname', 'displayname', 'name']),
-        grade: fuzzyFind(info, ['grade']),
+        name:   fuzzyFind(info, ['formattedname', 'displayname', 'name']),
+        grade:  fuzzyFind(info, ['grade']),
         school: fuzzyFind(info, ['schoolname', 'currentschool', 'organization', 'school', 'org', 'campus'])
       };
     }
 
-    // Fetch Grades
+    // Grades
     const gradeData = await client.getGradebook();
     const courses = parse(gradeData)?.Gradebook?.Courses?.Course;
     let grades = [];
-
     if (courses) {
       const courseList = Array.isArray(courses) ? courses : [courses];
       grades = courseList.map(course => {
         const currentMark = course.Marks?.Mark?.[0] || course.Marks?.Mark;
         return {
-          title: course.Title || 'Unknown',
+          title:  course.Title  || 'Unknown',
           period: course.Period || '?',
-          grade: currentMark?.CalculatedScoreString || 'N/A',
-          raw: currentMark?.CalculatedScoreRaw || 'N/A'
+          grade:  currentMark?.CalculatedScoreString || 'N/A',
+          raw:    currentMark?.CalculatedScoreRaw    || 'N/A'
         };
       });
     }
 
-    res.json({
-      success: true,
-      studentInfo,
-      grades
-    });
+    // Mail
+    const mailData = await client.getMail();
+    const parsedMail = parse(mailData);
+    const messages = parsedMail?.MessageListings?.MessageListing;
+    let mail = [];
+    if (messages) {
+      const mailList = Array.isArray(messages) ? messages : [messages];
+      mail = mailList.map(m => ({
+        from:    m.From       || m['@_From']       || 'Unknown',
+        subject: m.Subject    || m['@_Subject']    || '(No Subject)',
+        date:    m.BeginDate  || m['@_BeginDate']  || '',
+        read:    m.Read       || m['@_Read']       || 'false'
+      }));
+    }
+
+    res.json({ success: true, studentInfo, grades, mail });
 
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
