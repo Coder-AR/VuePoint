@@ -39,6 +39,35 @@ function findAllMessages(obj, results = []) {
   return results;
 }
 
+// Recursively searches the entire object tree for any key matching "gpa"
+function findGPADeep(obj) {
+  if (!obj || typeof obj !== 'object') return null;
+
+  // 1. Look through keys of the current object layer
+  for (const key in obj) {
+    if (key.toLowerCase().includes('gpa')) {
+      const val = obj[key];
+      if (val !== null && val !== undefined) {
+        // If it's a simple text string or number, grab it!
+        if (typeof val !== 'object') return val;
+        
+        // If it's nested inside a complex value object, extract its inner leaf properties
+        const leaf = val.Value || val['@_Value'] || val.Score || val['@_Score'] || val['#text'];
+        if (leaf) return leaf;
+      }
+    }
+  }
+
+  // 2. Dig deeper into child nodes if not found at this level
+  for (const key in obj) {
+    if (typeof obj[key] === 'object') {
+      const found = findGPADeep(obj[key]);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
 // 1. SERVE THE USER INTERFACE
 app.get('/', (req, res) => {
   res.send(`
@@ -295,23 +324,17 @@ app.post('/api/login', async (req, res) => {
       };
     }
 
-   // Grades & GPA (UPDATED: Safely extracts GPA alongside courses)
+   // Grades & GPA (FIXED: Uses recursive deep-scanning to pull hidden GPA metrics)
     const gradeData = await client.getGradebook();
-    const gradebookRoot = parse(gradeData)?.Gradebook;
+    const parsedGradebook = parse(gradeData);
+    const gradebookRoot = parsedGradebook?.Gradebook;
     const courses = gradebookRoot?.Courses?.Course;
     
-    // 1. Try common Synergy paths for GPA (Direct, Attribute, or Fuzzy Find)
-    let gpa = gradebookRoot?.GPA || 
-              gradebookRoot?.['@_GPA'] || 
-              fuzzyFind(gradebookRoot, ['gpa', 'cumulative', 'calculatedgpa']);
-
-    // 2. If the district returns a complex GPA object/array, pull the raw text value
-    if (gpa && typeof gpa === 'object') {
-      gpa = gpa.Value || gpa['@_Value'] || fuzzyFind(gpa, ['value', 'score', 'text']);
-    }
+    // Scan both the gradebook data AND the student profile data just in case your district saves it there
+    let discoveredGpa = findGPADeep(parsedGradebook) || findGPADeep(infoData);
     
-    // Fallback if no GPA is found on the account
-    const finalGpa = (gpa && gpa !== 'N/A') ? String(gpa).trim() : 'N/A';
+    // Clean up formatting adjustments if found
+    const finalGpa = (discoveredGpa && discoveredGpa !== 'N/A') ? String(discoveredGpa).trim() : 'N/A';
 
     let grades = [];
     if (courses) {
