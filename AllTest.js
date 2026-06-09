@@ -191,14 +191,18 @@ app.get('/', (req, res) => {
           document.getElementById('step1').style.display = 'none';
           document.getElementById('step2').style.display = 'none';
 
-          // Render Student Card
+          // Render Student Card (UPDATED: Added GPA display badge)
           if (result.studentInfo) {
             studentContainer.innerHTML =
               '<div class="student-card">' +
-                '<div class="student-details">' +
+                '<div class="student-details" style="flex: 1;">' +
                   '<h3>' + result.studentInfo.name + '</h3>' +
                   '<p><b>School:</b> ' + result.studentInfo.school + '</p>' +
                   '<p><b>Grade Level:</b> ' + result.studentInfo.grade + '</p>' +
+                '</div>' +
+                '<div style="text-align: right; background: rgba(255,255,255,0.15); padding: 12px 18px; border-radius: 10px; backdrop-filter: blur(5px);">' +
+                  '<div style="font-size: 11px; text-transform: uppercase; tracking-spacing: 1px; opacity: 0.8; font-weight: bold;">Current GPA</div>' +
+                  '<div style="font-size: 28px; font-weight: 800; line-height: 1.1; margin-top: 2px;">' + (result.gpa || 'N/A') + '</div>' +
                 '</div>' +
               '</div>';
           } else {
@@ -291,9 +295,24 @@ app.post('/api/login', async (req, res) => {
       };
     }
 
-    // Grades
+   // Grades & GPA (UPDATED: Safely extracts GPA alongside courses)
     const gradeData = await client.getGradebook();
-    const courses = parse(gradeData)?.Gradebook?.Courses?.Course;
+    const gradebookRoot = parse(gradeData)?.Gradebook;
+    const courses = gradebookRoot?.Courses?.Course;
+    
+    // 1. Try common Synergy paths for GPA (Direct, Attribute, or Fuzzy Find)
+    let gpa = gradebookRoot?.GPA || 
+              gradebookRoot?.['@_GPA'] || 
+              fuzzyFind(gradebookRoot, ['gpa', 'cumulative', 'calculatedgpa']);
+
+    // 2. If the district returns a complex GPA object/array, pull the raw text value
+    if (gpa && typeof gpa === 'object') {
+      gpa = gpa.Value || gpa['@_Value'] || fuzzyFind(gpa, ['value', 'score', 'text']);
+    }
+    
+    // Fallback if no GPA is found on the account
+    const finalGpa = (gpa && gpa !== 'N/A') ? String(gpa).trim() : 'N/A';
+
     let grades = [];
     if (courses) {
       const courseList = Array.isArray(courses) ? courses : [courses];
@@ -324,7 +343,7 @@ app.post('/api/login', async (req, res) => {
     }
 
     // Cleanly returns everything to the frontend once
-    res.json({ success: true, studentInfo, grades, notifications });
+    res.json({ success: true, studentInfo, grades, gpa: finalGpa, notifications });
 
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
