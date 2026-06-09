@@ -290,25 +290,28 @@ app.post('/api/login', async (req, res) => {
         };
       });
     }
-    // Mail (FIXED: Added widespread root and property variations)
+    // Mail (FIXED: Support deep nesting for Synergy Mail + Module name fallbacks)
     const mailData = await client.getMessages();
     const parsedMail = parse(mailData);
-    console.log("--- RAW MAIL DATA FROM DISTRICT ---", JSON.stringify(parsedMail, null, 2));
     
-    // Scan all known Synergy XML parent containers
-    const messages = parsedMail?.MessageListings?.MessageListing || 
+    // 1. Traverse down the modern Synergy Mail nested object tree
+    // 2. Fall back to traditional/legacy paths if a different district uses them
+    const messages = parsedMail?.PXPMessagesData?.SynergyMailMessageListingByStudents?.SynergyMailMessageListingByStudent?.SynergyMailMessageListings?.SynergyMailMessageListing ||
+                     parsedMail?.MessageListings?.MessageListing || 
                      parsedMail?.GetStudentMessagesResult?.MessageListings?.MessageListing ||
-                     parsedMail?.GetStudentMessages?.MessageListings?.MessageListing ||
-                     parsedMail?.StudentMessages?.MessageListings?.MessageListing;
+                     parsedMail?.GetStudentMessages?.MessageListings?.MessageListing;
                      
     let mail = [];
     if (messages) {
+      // Safely turn single message objects into an array if there's only 1 message
       const mailList = Array.isArray(messages) ? messages : [messages];
+      
       mail = mailList.map(m => ({
-        from:    m.From       || m['@_From']       || m.from    || 'Unknown',
-        subject: m.Subject    || m['@_Subject']    || m.subject || '(No Subject)',
-        date:    m.BeginDate  || m['@_BeginDate']  || m.date    || '',
-        read:    m.Read       || m['@_Read']       || m.read    || 'false'
+        // Use Module (e.g. "ReportCard") as the sender if a traditional human "From" isn't provided
+        from:    m.From       || m['@_From']       || m.Module  || 'System Alert',
+        subject: m.Subject    || m['@_Subject']    || m.SubjectNoHTML || '(No Subject)',
+        date:    m.BeginDate  || m['@_BeginDate']  || '',
+        read:    m.Read       || m['@_Read']       || 'false'
       }));
     }
 
