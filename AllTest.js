@@ -137,7 +137,6 @@ app.get('/', (req, res) => {
         .modal-close:hover { color: #334155; }
         .assignment-type-tag { font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: #e2e8f0; color: #475569; text-transform: uppercase; display: inline-block; margin-top: 4px; }
         
-        /* Sandbox Simulator Layout Form Styles */
         .mock-tag { background: #feebc8; color: #c05621; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-left: 5px; text-transform: uppercase; }
         .mock-row { background-color: #fffbeb; }
         .delete-mock-btn { background: none; border: none; color: #dc2626; font-size: 12px; cursor: pointer; padding: 0; text-decoration: underline; margin-top: 4px; font-weight: 500; display: block; }
@@ -158,7 +157,7 @@ app.get('/', (req, res) => {
       <div class="box" id="step1">
         <label>1. Enter Zip Code</label>
         <input type="text" id="zipInput" placeholder="e.g., 00501">
-        <button onclick="searchDistricts()">Search Districts</button>
+        <button type="button" onclick="searchDistricts()">Search Districts</button>
         <div id="searchStatus" style="color: #ef4444; font-size: 14px; margin-top: 5px;"></div>
       </div>
 
@@ -172,7 +171,7 @@ app.get('/', (req, res) => {
         <label>Password</label>
         <input type="password" id="passwordInput" placeholder="Enter password">
 
-        <button onclick="login()">Log In & Fetch Data</button>
+        <button type="button" onclick="login()">Log In and Fetch Data</button>
       </div>
 
       <div id="dashboardBox" style="display: none;">
@@ -180,7 +179,7 @@ app.get('/', (req, res) => {
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
           <h3 style="margin: 0;">Current Term Grades</h3>
-          <span style="font-size: 12px; color: #64748b; font-weight: 500;">💡 Click any course row to open the Assignment Simulator</span>
+          <span style="font-size: 12px; color: #64748b; font-weight: 500;">[Tip] Click any course row to open the Assignment Simulator</span>
         </div>
         <div class="table-container">
           <table>
@@ -197,8 +196,8 @@ app.get('/', (req, res) => {
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; margin-bottom: 10px;">
           <h3 style="margin: 0;">Finalized Report Card</h3>
-          <button id="pdfBtn" onclick="downloadPDF()" style="width: auto; margin: 0; padding: 6px 14px; font-size: 13px; background: #059669;">
-            📄 Download Official PDF
+          <button id="pdfBtn" type="button" onclick="downloadPDF()" style="width: auto; margin: 0; padding: 6px 14px; font-size: 13px; background: #059669;">
+            Download Official PDF
           </button>
         </div>
         <div class="table-container">
@@ -212,7 +211,7 @@ app.get('/', (req, res) => {
           </table>
         </div>
 
-        <h3>Notifications & Alerts</h3>
+        <h3>Notifications and Alerts</h3>
         <div class="table-container">
           <table>
             <thead>
@@ -229,18 +228,18 @@ app.get('/', (req, res) => {
 
       <div id="assignmentModal" class="modal-overlay" onclick="toggleModal(false)">
         <div class="modal-window" onclick="event.stopPropagation()">
-          <span class="modal-close" onclick="toggleModal(false)">&times;</span>
+          <span class="modal-close" onclick="toggleModal(false)">X</span>
           <h3 id="modalCourseTitle" style="margin: 0 0 2px 0;">Course Breakdown</h3>
           <p id="modalCourseMeta" style="margin: 0 0 15px 0; font-size: 14px; color: #64748b; font-weight: 500;"></p>
           
           <div class="grade-comparison-box">
             <div><b>Original Standing:</b> <span id="origGradeSpan">N/A</span></div>
-            <div style="font-size: 16px;">➡️</div>
+            <div style="font-size: 16px;">--&gt;</div>
             <div><b>Simulated Standing:</b> <span id="simGradeSpan" style="font-weight: 800; color: #2563eb;">N/A</span></div>
           </div>
 
           <div class="simulator-panel">
-            <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #1e293b;">✨ Create Mock Assignment Sandbox</h4>
+            <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #1e293b;">Create Mock Assignment Sandbox</h4>
             <div class="simulator-grid">
               <div>
                 <label>Assignment Title</label>
@@ -259,7 +258,7 @@ app.get('/', (req, res) => {
                 </div>
               </div>
               <div>
-                <button onclick="addMockAssignmentRow()">Incorporate</button>
+                <button type="button" onclick="addMockAssignmentRow()">Incorporate</button>
               </div>
             </div>
           </div>
@@ -280,12 +279,22 @@ app.get('/', (req, res) => {
       </div>
 
       <script>
+        // Global Error Catcher Hook to expose rendering crashes immediately
+        window.onerror = function(msg, url, line) {
+          var statusBox = document.getElementById('searchStatus');
+          if (statusBox) {
+            statusBox.style.color = '#ef4444';
+            statusBox.innerText = "Runtime Error: " + msg + " (Line " + line + ")";
+          }
+          return false;
+        };
+
         window.cachedGradesPayload = [];
         window.currentSelectedCourseIndex = null;
 
         async function searchDistricts() {
-          const zip = document.getElementById('zipInput').value.trim();
-          const status = document.getElementById('searchStatus');
+          var zip = document.getElementById('zipInput').value.trim();
+          var status = document.getElementById('searchStatus');
           
           if (!zip) {
             status.style.color = '#ef4444';
@@ -297,8 +306,8 @@ app.get('/', (req, res) => {
           status.innerText = 'Searching...';
 
           try {
-            const response = await fetch('/api/search?zip=' + zip);
-            const data = await response.json();
+            var response = await fetch('/api/search?zip=' + zip);
+            var data = await response.json();
 
             if (data.error) {
               status.style.color = '#ef4444';
@@ -307,11 +316,11 @@ app.get('/', (req, res) => {
             }
 
             status.innerText = '';
-            const select = document.getElementById('districtSelect');
+            var select = document.getElementById('districtSelect');
             select.innerHTML = '';
 
-            data.districts.forEach(d => {
-              const option = document.createElement('option');
+            data.districts.forEach(function(d) {
+              var option = document.createElement('option');
               option.value = d.url;
               option.text = d.name;
               select.appendChild(option);
@@ -325,16 +334,16 @@ app.get('/', (req, res) => {
         }
 
         async function login() {
-          const url = document.getElementById('districtSelect').value;
-          const user = document.getElementById('usernameInput').value;
-          const pass = document.getElementById('passwordInput').value;
+          var url = document.getElementById('districtSelect').value;
+          var user = document.getElementById('usernameInput').value;
+          var pass = document.getElementById('passwordInput').value;
 
-          const dashboardBox = document.getElementById('dashboardBox');
-          const studentContainer = document.getElementById('studentContainer');
-          const gradesTableBody = document.getElementById('gradesTableBody');
-          const reportCardHeadRow = document.getElementById('reportCardHeadRow');
-          const reportCardTableBody = document.getElementById('reportCardTableBody');
-          const notificationTableBody = document.getElementById('notificationTableBody');
+          var dashboardBox = document.getElementById('dashboardBox');
+          var studentContainer = document.getElementById('studentContainer');
+          var gradesTableBody = document.getElementById('gradesTableBody');
+          var reportCardHeadRow = document.getElementById('reportCardHeadRow');
+          var reportCardTableBody = document.getElementById('reportCardTableBody');
+          var notificationTableBody = document.getElementById('notificationTableBody');
 
           dashboardBox.style.display = 'block';
           studentContainer.innerHTML = '<div class="loading">Authenticating and loading secure data...</div>';
@@ -344,13 +353,13 @@ app.get('/', (req, res) => {
           notificationTableBody.innerHTML = '';
 
           try {
-            const response = await fetch('/api/login', {
+            var response = await fetch('/api/login', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ url, user, pass })
+              body: JSON.stringify({ url: url, user: user, pass: pass })
             });
 
-            const result = await response.json();
+            var result = await response.json();
 
             if (!result.success) {
               studentContainer.innerHTML = '<div style="color: #ef4444; padding: 20px; font-weight: bold;">Error: ' + result.message + '</div>';
@@ -360,18 +369,17 @@ app.get('/', (req, res) => {
             document.getElementById('step1').style.display = 'none';
             document.getElementById('step2').style.display = 'none';
 
-            // Safely prepare data arrays to support dynamic simulation injections
-            window.cachedGradesPayload = (result.grades || []).map(g => {
+            window.cachedGradesPayload = (result.grades || []).map(function(g) {
               g.mockAssignments = [];
               return g;
             });
 
             if (result.studentInfo) {
-              let avatarHtml = '';
+              var avatarHtml = '';
               if (result.studentInfo.photo && result.studentInfo.photo !== 'N/A') {
                 avatarHtml = '<img src="data:image/jpeg;base64,' + result.studentInfo.photo + '" style="width: 65px; height: 65px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.4); flex-shrink: 0;" />';
               } else {
-                avatarHtml = '<div style="width: 65px; height: 65px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0;">👤</div>';
+                avatarHtml = '<div style="width: 65px; height: 65px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0;">U</div>';
               }
 
               studentContainer.innerHTML =
@@ -394,24 +402,24 @@ app.get('/', (req, res) => {
             renderMainGradeTable();
 
             if (window.cachedGradesPayload.length > 0) {
-              const uniqueTerms = [];
-              window.cachedGradesPayload.forEach(course => {
+              var uniqueTerms = [];
+              window.cachedGradesPayload.forEach(function(course) {
                 if (course.history) {
-                  course.history.forEach(h => {
+                  course.history.forEach(function(h) {
                     if (!uniqueTerms.includes(h.termName)) uniqueTerms.push(h.termName);
                   });
                 }
               });
 
-              uniqueTerms.forEach(term => {
+              uniqueTerms.forEach(function(term) {
                 reportCardHeadRow.innerHTML += '<th style="text-align: center;">' + term + '</th>';
               });
 
-              reportCardTableBody.innerHTML = window.cachedGradesPayload.map(course => {
-                let rowHtml = '<tr><td><b>' + course.title + '</b> <span style="font-size:12px; color:#64748b; margin-left:4px;">P' + course.period + '</span></td>';
+              reportCardTableBody.innerHTML = window.cachedGradesPayload.map(function(course) {
+                var rowHtml = '<tr><td><b>' + course.title + '</b> <span style="font-size:12px; color:#64748b; margin-left:4px;">P' + course.period + '</span></td>';
                 
-                uniqueTerms.forEach(term => {
-                  const match = course.history ? course.history.find(h => h.termName === term) : null;
+                uniqueTerms.forEach(function(term) {
+                  var match = course.history ? course.history.find(function(h) { return h.termName === term; }) : null;
                   if (match && match.grade && match.grade !== 'N/A') {
                     rowHtml += '<td style="text-align: center;"><span class="period-badge" style="background:#e2e8f0; font-weight:bold; display:inline-block; min-width:30px;">' + match.grade + '</span></td>';
                   } else {
@@ -427,8 +435,8 @@ app.get('/', (req, res) => {
             }
 
             if (result.notifications && result.notifications.length > 0) {
-              notificationTableBody.innerHTML = result.notifications.map(n => {
-                const unread = n.read === 'false' || n.read === false;
+              notificationTableBody.innerHTML = result.notifications.map(function(n) {
+                var unread = n.read === 'false' || n.read === false;
                 return '<tr style="' + (unread ? 'font-weight: bold;' : '') + '">' +
                   '<td>' + (unread ? '<span class="unread-dot"></span>' : '') + n.from + '</td>' +
                   '<td>' + n.subject + '</td>' +
@@ -443,17 +451,16 @@ app.get('/', (req, res) => {
           }
         }
 
-        // Isolates standard rendering logic to allow live background calculations
         function renderMainGradeTable() {
-          const gradesTableBody = document.getElementById('gradesTableBody');
+          var gradesTableBody = document.getElementById('gradesTableBody');
           if (window.cachedGradesPayload.length === 0) {
             gradesTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#64748b;">No gradebook data found.</td></tr>';
             return;
           }
 
-          gradesTableBody.innerHTML = window.cachedGradesPayload.map((g, index) => {
-            const standing = calculateBlendedCourseGrade(g);
-            let badgeClass = 'grade-good';
+          gradesTableBody.innerHTML = window.cachedGradesPayload.map(function(g, index) {
+            var standing = calculateBlendedCourseGrade(g);
+            var badgeClass = 'grade-good';
             if (standing.letter.startsWith('F') || standing.letter.startsWith('D') || standing.letter === 'NP') {
               badgeClass = 'grade-danger';
             } else if (standing.letter.startsWith('C')) {
@@ -469,8 +476,8 @@ app.get('/', (req, res) => {
 
         function parseScoreString(str) {
           if (!str) return null;
-          const clean = str.replace(/,/g, '');
-          const match = clean.match(/^([\d.]+)\s*\/\s*([\d.]+)/);
+          var clean = str.replace(/,/g, '');
+          var match = clean.match(/^([\\d.]+)\\s*\\/\\s*([\\d.]+)/);
           if (match) {
             return { earned: parseFloat(match[1]), possible: parseFloat(match[2]) };
           }
@@ -486,13 +493,13 @@ app.get('/', (req, res) => {
         }
 
         function calculateBlendedCourseGrade(course) {
-          let totalEarned = 0;
-          let totalPossible = 0;
-          let validPointsFound = false;
+          var totalEarned = 0;
+          var totalPossible = 0;
+          var validPointsFound = false;
 
           if (course.assignments) {
-            course.assignments.forEach(a => {
-              const parsed = parseScoreString(a.score);
+            course.assignments.forEach(function(a) {
+              var parsed = parseScoreString(a.score);
               if (parsed) {
                 totalEarned += parsed.earned;
                 totalPossible += parsed.possible;
@@ -502,7 +509,7 @@ app.get('/', (req, res) => {
           }
 
           if (course.mockAssignments) {
-            course.mockAssignments.forEach(m => {
+            course.mockAssignments.forEach(function(m) {
               totalEarned += m.earned;
               totalPossible += m.possible;
               validPointsFound = true;
@@ -513,7 +520,7 @@ app.get('/', (req, res) => {
             return { letter: course.grade || 'N/A', percentage: course.raw || 'N/A' };
           }
 
-          const calculatedPercentage = totalPossible > 0 ? ((totalEarned / totalPossible) * 100).toFixed(2) : "0.00";
+          var calculatedPercentage = totalPossible > 0 ? ((totalEarned / totalPossible) * 100).toFixed(2) : "0.00";
           return {
             letter: determineLetterGrade(parseFloat(calculatedPercentage)),
             percentage: calculatedPercentage
@@ -522,21 +529,26 @@ app.get('/', (req, res) => {
 
         function viewCourseAssignments(courseIndex) {
           window.currentSelectedCourseIndex = courseIndex;
-          const course = window.cachedGradesPayload[courseIndex];
+          var course = window.cachedGradesPayload[courseIndex];
           if (!course) return;
 
           document.getElementById('modalCourseTitle').innerText = course.title;
           document.getElementById('origGradeSpan').innerText = course.grade + " (" + course.raw + "%)";
 
-          const categorySelect = document.getElementById('mockCategory');
+          var categorySelect = document.getElementById('mockCategory');
           categorySelect.innerHTML = '';
           
-          const uniqueCategories = [...new Set((course.assignments || []).map(a => a.type).filter(Boolean))];
+          var allTypes = (course.assignments || []).map(function(a) { return a.type; }).filter(Boolean);
+          var uniqueCategories = [];
+          allTypes.forEach(function(t) {
+            if (!uniqueCategories.includes(t)) uniqueCategories.push(t);
+          });
+
           if (uniqueCategories.length === 0) {
             uniqueCategories.push('Homework', 'Quiz', 'Assessment', 'Project');
           }
-          uniqueCategories.forEach(cat => {
-            const opt = document.createElement('option');
+          uniqueCategories.forEach(function(cat) {
+            var opt = document.createElement('option');
             opt.value = cat; opt.text = cat; categorySelect.appendChild(opt);
           });
 
@@ -545,24 +557,23 @@ app.get('/', (req, res) => {
         }
 
         function renderModalAssignmentsList() {
-          const course = window.cachedGradesPayload[window.currentSelectedCourseIndex];
-          const tbody = document.getElementById('modalAssignmentsTableBody');
+          var course = window.cachedGradesPayload[window.currentSelectedCourseIndex];
+          var tbody = document.getElementById('modalAssignmentsTableBody');
           tbody.innerHTML = '';
 
-          const standing = calculateBlendedCourseGrade(course);
+          var standing = calculateBlendedCourseGrade(course);
           document.getElementById('simGradeSpan').innerText = standing.letter + " (" + standing.percentage + "%)";
-          document.getElementById('modalCourseMeta').innerText = "Period " + course.period + " • Cumulative Simulation Engine Subsystem";
+          document.getElementById('modalCourseMeta').innerText = "Period " + course.period + " - Cumulative Simulation Engine Subsystem";
 
-          let rowsHtml = '';
+          var rowsHtml = '';
 
-          // Prepend interactive mock assignments
           if (course.mockAssignments) {
-            course.mockAssignments.forEach((m, idx) => {
+            course.mockAssignments.forEach(function(m, idx) {
               rowsHtml += '<tr class="mock-row">' +
                 '<td>' +
                   '<b>' + m.name + '</b> <span class="mock-tag">MOCK</span>' +
                   '<br><span class="assignment-type-tag" style="background:#feebc8; color:#c05621;">' + m.type + '</span>' +
-                  '<button class="delete-mock-btn" onclick="deleteMockAssignmentRow(' + idx + ')">🗑️ Purge Assignment</button>' +
+                  '<button class="delete-mock-btn" onclick="deleteMockAssignmentRow(' + idx + ')">Purge Assignment</button>' +
                 '</td>' +
                 '<td style="color: #475569; font-size: 13px; font-style: italic;">Sandbox Instance</td>' +
                 '<td style="text-align: right; font-weight: 700; color: #b45309;">' + m.earned + ' / ' + m.possible + '</td>' +
@@ -573,8 +584,8 @@ app.get('/', (req, res) => {
           if ((!course.assignments || course.assignments.length === 0) && (!course.mockAssignments || course.mockAssignments.length === 0)) {
             rowsHtml = '<tr><td colspan="3" style="text-align: center; padding: 30px; color: #64748b;">No elements found inside this course context.</td></tr>';
           } else if (course.assignments) {
-            rowsHtml += course.assignments.map(a => {
-              const typeBadge = a.type ? '<br><span class="assignment-type-tag">' + a.type + '</span>' : '';
+            rowsHtml += course.assignments.map(function(a) {
+              var typeBadge = a.type ? '<br><span class="assignment-type-tag">' + a.type + '</span>' : '';
               return '<tr>' +
                 '<td><b>' + a.name + '</b>' + typeBadge + '</td>' +
                 '<td style="color: #475569; font-size: 14px;">' + a.date + '</td>' +
@@ -584,27 +595,27 @@ app.get('/', (req, res) => {
           }
 
           tbody.innerHTML = rowsHtml;
-          renderMainGradeTable(); // Push running computations out to main layout tree live
+          renderMainGradeTable();
         }
 
         function addMockAssignmentRow() {
-          const nameInput = document.getElementById('mockName');
-          const catSelect = document.getElementById('mockCategory');
-          const earnedInput = document.getElementById('mockEarned');
-          const possibleInput = document.getElementById('mockPossible');
+          var nameInput = document.getElementById('mockName');
+          var catSelect = document.getElementById('mockCategory');
+          var earnedInput = document.getElementById('mockEarned');
+          var possibleInput = document.getElementById('mockPossible');
 
-          const name = nameInput.value.trim() || "Sandbox Mock Assignment";
-          const type = catSelect.value;
-          const earned = parseFloat(earnedInput.value);
-          const possible = parseFloat(possibleInput.value);
+          var name = nameInput.value.trim() || "Sandbox Mock Assignment";
+          var type = catSelect.value;
+          var earned = parseFloat(earnedInput.value);
+          var possible = parseFloat(possibleInput.value);
 
           if (isNaN(earned) || isNaN(possible) || possible <= 0) {
             alert("Please input valid numerical parameters to run calculations.");
             return;
           }
 
-          const course = window.cachedGradesPayload[window.currentSelectedCourseIndex];
-          course.mockAssignments.unshift({ name, type, earned, possible });
+          var course = window.cachedGradesPayload[window.currentSelectedCourseIndex];
+          course.mockAssignments.unshift({ name: name, type: type, earned: earned, possible: possible });
 
           nameInput.value = '';
           earnedInput.value = '';
@@ -614,7 +625,7 @@ app.get('/', (req, res) => {
         }
 
         function deleteMockAssignmentRow(idx) {
-          const course = window.cachedGradesPayload[window.currentSelectedCourseIndex];
+          var course = window.cachedGradesPayload[window.currentSelectedCourseIndex];
           if (course && course.mockAssignments) {
             course.mockAssignments.splice(idx, 1);
           }
@@ -626,30 +637,30 @@ app.get('/', (req, res) => {
         }
 
         async function downloadPDF() {
-          const url = document.getElementById('districtSelect').value;
-          const user = document.getElementById('usernameInput').value;
-          const pass = document.getElementById('passwordInput').value;
-          const pdfBtn = document.getElementById('pdfBtn');
+          var url = document.getElementById('districtSelect').value;
+          var user = document.getElementById('usernameInput').value;
+          var pass = document.getElementById('passwordInput').value;
+          var pdfBtn = document.getElementById('pdfBtn');
 
-          const originalText = pdfBtn.innerText;
-          pdfBtn.innerText = "⏳ Generating PDF...";
+          var originalText = pdfBtn.innerText;
+          pdfBtn.innerText = "Generating PDF...";
           pdfBtn.disabled = true;
 
           try {
-            const response = await fetch('/api/report-card/download', {
+            var response = await fetch('/api/report-card/download', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ url, user, pass })
+              body: JSON.stringify({ url: url, user: user, pass: pass })
             });
 
             if (!response.ok) {
-              const errData = await response.json();
+              var errData = await response.json();
               alert("Error: " + (errData.message || "Could not retrieve document."));
               return;
             }
 
-            const blob = await response.blob();
-            const blobUrl = window.URL.createObjectURL(blob);
+            var blob = await response.blob();
+            var blobUrl = window.URL.createObjectURL(blob);
             window.open(blobUrl, '_blank');
           } catch (err) {
             alert("Network error processing document extraction request.");
