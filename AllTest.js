@@ -122,7 +122,6 @@ app.get('/', (req, res) => {
         td { padding: 14px; border-bottom: 1px solid #f1f5f9; font-size: 15px; }
         tr:last-child td { border-bottom: none; }
 
-        /* Clickable row adjustments */
         .clickable-row { cursor: pointer; transition: background-color 0.15s ease; }
         .clickable-row:hover { background-color: #f8fafc; }
 
@@ -135,7 +134,6 @@ app.get('/', (req, res) => {
 
         .loading { text-align: center; color: #64748b; font-weight: 500; padding: 40px; }
 
-        /* NEW MODAL WINDOW CSS STYLES */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
         .modal-window { background: white; padding: 25px; border-radius: 14px; max-width: 700px; width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); position: relative; }
         .modal-close { position: absolute; top: 18px; right: 20px; font-size: 22px; cursor: pointer; color: #94a3b8; font-weight: bold; transition: color 0.15s; }
@@ -240,7 +238,6 @@ app.get('/', (req, res) => {
       </div>
 
       <script>
-        // Global placeholder holding data array payloads downloaded safely on auth cycle
         window.cachedGradesPayload = [];
 
         async function searchDistricts() {
@@ -305,7 +302,6 @@ app.get('/', (req, res) => {
           document.getElementById('step1').style.display = 'none';
           document.getElementById('step2').style.display = 'none';
 
-          // Inject into global client memory cache to drive click triggers instantly
           window.cachedGradesPayload = result.grades || [];
 
           // Render Student Card
@@ -334,7 +330,7 @@ app.get('/', (req, res) => {
             studentContainer.innerHTML = '<p>No profile info returned.</p>';
           }
 
-          // Render Live Term Grades (Updated with Interactive Row Elements)
+          // Render Live Term Grades
           if (result.grades && result.grades.length > 0) {
             gradesTableBody.innerHTML = result.grades.map((g, index) => {
               const cleanGrade = g.grade ? g.grade.trim().toUpperCase() : '';
@@ -405,7 +401,6 @@ app.get('/', (req, res) => {
           }
         }
 
-        // NEW: Handles the display filtering logic for Course drilldowns
         function viewCourseAssignments(courseIndex) {
           const course = window.cachedGradesPayload[courseIndex];
           if (!course) return;
@@ -436,7 +431,6 @@ app.get('/', (req, res) => {
           document.getElementById('assignmentModal').style.display = show ? 'flex' : 'none';
         }
 
-        // Client-Side PDF Retrieval Streaming Architecture
         async function downloadPDF() {
           const url = document.getElementById('districtSelect').value;
           const user = document.getElementById('usernameInput').value;
@@ -532,7 +526,7 @@ app.post('/api/login', async (req, res) => {
       };
     }
 
-    // Grades & GPA (UPDATED: Deep maps assignment data structures nested in gradebook branches)
+    // Grades & GPA
     const gradeData = await client.getGradebook();
     const parsedGradebook = parse(gradeData);
     const gradebookRoot = parsedGradebook?.Gradebook;
@@ -557,16 +551,29 @@ app.post('/api/login', async (req, res) => {
           raw:      m.CalculatedScoreRaw    || 'N/A'
         }));
 
-        // NEW: Safely parses assignment lists nested inside individual courses
-        const rawAssignments = course.Assignments?.Assignment;
+        // FIX: Deep mapping that aggregates assignments located at both Course root level or deep-nested within individual Term Marks
+        let rawAssignments = course.Assignments?.Assignment || currentMark?.Assignments?.Assignment;
+        
+        if (!rawAssignments) {
+          for (const mark of rawMarksArray) {
+            if (mark.Assignments?.Assignment) {
+              rawAssignments = mark.Assignments.Assignment;
+              break;
+            }
+          }
+        }
+
         const assignmentList = Array.isArray(rawAssignments) ? rawAssignments : (rawAssignments ? [rawAssignments] : []);
         
-        const parsedAssignments = assignmentList.map(assign => ({
-          name: assign.Measure || assign['@_Measure'] || 'Assignment',
-          date: assign.DueDate || assign['@_DueDate'] || assign.Date || assign['@_Date'] || 'N/A',
-          score: assign.Points || assign['@_Points'] || assign.ScoreString || assign['@_ScoreString'] || 'N/A',
-          type: assign.Type || assign['@_Type'] || ''
-        }));
+        const parsedAssignments = assignmentList.map(assign => {
+          let scoreVal = assign.Points || assign['@_Points'] || assign.ScoreString || assign['@_ScoreString'] || assign.ResultString || assign['@_ResultString'] || 'N/A';
+          return {
+            name: assign.Measure || assign['@_Measure'] || assign.Title || assign['@_Title'] || 'Assignment',
+            date: assign.DueDate || assign['@_DueDate'] || assign.Date || assign['@_Date'] || 'N/A',
+            score: scoreVal,
+            type: assign.Type || assign['@_Type'] || ''
+          };
+        });
 
         return {
           title:   course.Title  || 'Unknown',
@@ -574,7 +581,7 @@ app.post('/api/login', async (req, res) => {
           grade:   currentMark?.CalculatedScoreString || 'N/A',
           raw:     currentMark?.CalculatedScoreRaw    || 'N/A',
           history: historyData,
-          assignments: parsedAssignments // Attached payload driving click breakdowns
+          assignments: parsedAssignments
         };
       });
     }
@@ -614,12 +621,10 @@ app.post('/api/report-card/download', async (req, res) => {
 
   try {
     const client = await StudentVue.login(url, user, pass);
-
     const rawDocumentXML = await client.request.execute("ReportCards", {});
     const parsedDocument = parse(rawDocumentXML);
 
     const reportCardData = parsedDocument?.ReportCards?.ReportCardsList?.ReportCard;
-    
     if (!reportCardData) {
       return res.status(404).json({ success: false, message: "No official PDF report cards published by administration yet." });
     }
@@ -635,7 +640,6 @@ app.post('/api/report-card/download', async (req, res) => {
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'inline; filename="Official_Report_Card.pdf"');
-    
     return res.send(pdfBuffer);
 
   } catch (err) {
