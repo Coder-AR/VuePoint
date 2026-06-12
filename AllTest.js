@@ -469,8 +469,15 @@ app.get('/', (req, res) => {
             return '<tr class="clickable-row" onclick="viewCourseAssignments(' + index + ')">' +
               '<td><span class="period-badge">P' + g.period + '</span></td>' +
               '<td><b>' + g.title + '</b>' + (g.mockAssignments.length > 0 ? ' <span class="mock-tag">Simulated</span>' : '') + '</td>' +
-              '<td style="text-align: right;"><span class="grade-badge ' + badgeClass + '">' + standing.letter + ' (' + standing.percentage + '%)</span></td>' +
-            '</tr>';
+              var displayScore = parseFloat(standing.percentage) <= 5.0 
+  ? standing.percentage + ' / 4.0' 
+  : standing.percentage + '%';
+
+return '<tr class="clickable-row" onclick="viewCourseAssignments(' + index + ')">' +
+  '<td><span class="period-badge">P' + g.period + '</span></td>' +
+  '<td><b>' + g.title + '</b>' + (g.mockAssignments.length > 0 ? ' <span class="mock-tag">Simulated</span>' : '') + '</td>' +
+  '<td style="text-align: right;"><span class="grade-badge ' + badgeClass + '">' + standing.letter + ' (' + displayScore + ')</span></td>' +
+'</tr>';
           }).join('');
         }
 
@@ -485,12 +492,22 @@ app.get('/', (req, res) => {
         }
 
         function determineLetterGrade(pct) {
-          if (pct >= 90) return 'A';
-          if (pct >= 80) return 'B';
-          if (pct >= 70) return 'C';
-          if (pct >= 60) return 'D';
-          return 'F';
-        }
+  // If the score is a 4-point scale value instead of a percentage
+  if (pct <= 5.0) {
+    if (pct >= 3.5) return 'A';
+    if (pct >= 3.0) return 'B';
+    if (pct >= 2.0) return 'C';
+    if (pct >= 1.0) return 'D';
+    return 'F';
+  }
+  
+  // Traditional Percentage Fallback
+  if (pct >= 90) return 'A';
+  if (pct >= 80) return 'B';
+  if (pct >= 70) return 'C';
+  if (pct >= 60) return 'D';
+  return 'F';
+}
 
         function calculateBlendedCourseGrade(course) {
           var totalEarned = 0;
