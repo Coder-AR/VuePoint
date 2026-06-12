@@ -452,34 +452,35 @@ app.get('/', (req, res) => {
         }
 
         function renderMainGradeTable() {
-          var gradesTableBody = document.getElementById('gradesTableBody');
-          if (window.cachedGradesPayload.length === 0) {
-            gradesTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#64748b;">No gradebook data found.</td></tr>';
-            return;
-          }
+  var gradesTableBody = document.getElementById('gradesTableBody');
+  if (window.cachedGradesPayload.length === 0) {
+    gradesTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#64748b;">No gradebook data found.</td></tr>';
+    return;
+  }
 
-          gradesTableBody.innerHTML = window.cachedGradesPayload.map(function(g, index) {
-            var standing = calculateBlendedCourseGrade(g);
-            var badgeClass = 'grade-good';
-            if (standing.letter.startsWith('F') || standing.letter.startsWith('D') || standing.letter === 'NP') {
-              badgeClass = 'grade-danger';
-            } else if (standing.letter.startsWith('C')) {
-              badgeClass = 'grade-warning';
-            }
-            return '<tr class="clickable-row" onclick="viewCourseAssignments(' + index + ')">' +
-              '<td><span class="period-badge">P' + g.period + '</span></td>' +
-              '<td><b>' + g.title + '</b>' + (g.mockAssignments.length > 0 ? ' <span class="mock-tag">Simulated</span>' : '') + '</td>' +
-              var displayScore = parseFloat(standing.percentage) <= 5.0 
-  ? standing.percentage + ' / 4.0' 
-  : standing.percentage + '%';
+  gradesTableBody.innerHTML = window.cachedGradesPayload.map(function(g, index) {
+    var standing = calculateBlendedCourseGrade(g);
+    var badgeClass = 'grade-good';
+    if (standing.letter.startsWith('F') || standing.letter.startsWith('D') || standing.letter === 'NP') {
+      badgeClass = 'grade-danger';
+    } else if (standing.letter.startsWith('C')) {
+      badgeClass = 'grade-warning';
+    }
 
-return '<tr class="clickable-row" onclick="viewCourseAssignments(' + index + ')">' +
-  '<td><span class="period-badge">P' + g.period + '</span></td>' +
-  '<td><b>' + g.title + '</b>' + (g.mockAssignments.length > 0 ? ' <span class="mock-tag">Simulated</span>' : '') + '</td>' +
-  '<td style="text-align: right;"><span class="grade-badge ' + badgeClass + '">' + standing.letter + ' (' + displayScore + ')</span></td>' +
-'</tr>';
-          }).join('');
-        }
+    // 1. Compute the display score safely BEFORE entering the return template string
+    var displayScore = parseFloat(standing.percentage) <= 5.0 
+      ? standing.percentage + ' / 4.0' 
+      : standing.percentage + '%';
+
+    // 2. Return the clean HTML string row
+    return '<tr class="clickable-row" onclick="viewCourseAssignments(' + index + ')">' +
+      '<td><span class="period-badge">P' + g.period + '</span></td>' +
+      '<td><b>' + g.title + '</b>' + (g.mockAssignments.length > 0 ? ' <span class="mock-tag">Simulated</span>' : '') + '</td>' +
+      '<td style="text-align: right;"><span class="grade-badge ' + badgeClass + '">' + standing.letter + ' (' + displayScore + ')</span></td>' +
+    '</tr>';
+  }).join('');
+}
+
 
         function parseScoreString(str) {
           if (!str) return null;
