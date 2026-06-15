@@ -81,6 +81,21 @@
   <div id="dashboardBox" style="display: none;">
     <div id="studentContainer"></div>
 
+    <h3>Daily Class Schedule</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 80px;">Period</th>
+            <th>Course Title</th>
+            <th>Room No.</th>
+            <th>Instructor</th>
+          </tr>
+        </thead>
+        <tbody id="scheduleTableBody"></tbody>
+      </table>
+    </div>
+
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
       <h3 style="margin: 0;">Current Term Grades</h3>
       <span style="font-size: 12px; color: #64748b; font-weight: 500;">[Tip] Click any course row to open the Assignment Simulator</span>
@@ -243,6 +258,7 @@
 
       var dashboardBox = document.getElementById('dashboardBox');
       var studentContainer = document.getElementById('studentContainer');
+      var scheduleTableBody = document.getElementById('scheduleTableBody');
       var gradesTableBody = document.getElementById('gradesTableBody');
       var reportCardHeadRow = document.getElementById('reportCardHeadRow');
       var reportCardTableBody = document.getElementById('reportCardTableBody');
@@ -250,6 +266,7 @@
 
       dashboardBox.style.display = 'block';
       studentContainer.innerHTML = '<div class="loading">Authenticating and loading data...</div>';
+      scheduleTableBody.innerHTML = '';
       gradesTableBody.innerHTML = '';
       reportCardHeadRow.innerHTML = '<th>Course Title</th>';
       reportCardTableBody.innerHTML = '';
@@ -300,6 +317,20 @@
             '</div>';
         } else {
           studentContainer.innerHTML = '<p>No profile info returned.</p>';
+        }
+
+        // RENDER METHOD: Class Schedule List Parser
+        if (result.schedule && result.schedule.length > 0) {
+          scheduleTableBody.innerHTML = result.schedule.map(function(s) {
+            return '<tr>' +
+              '<td><span class="period-badge">P' + s.period + '</span></td>' +
+              '<td><b>' + s.course + '</b></td>' +
+              '<td><span style="font-family: monospace; font-weight: 600; color: #475569;">' + s.room + '</span></td>' +
+              '<td>' + s.teacher + '</td>' +
+            '</tr>';
+          }).join('');
+        } else {
+          scheduleTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#64748b;">No class scheduling details compiled for this semester.</td></tr>';
         }
 
         renderMainGradeTable();
@@ -393,7 +424,6 @@
     }
 
     function determineLetterGrade(score) {
-      // 4-point scale boundaries evaluation
       if (score <= 5.0) {
         if (score >= 3.5) return 'A';
         if (score >= 3.0) return 'B';
@@ -401,8 +431,6 @@
         if (score >= 1.0) return 'D';
         return 'F';
       }
-      
-      // Traditional 100-point scale fallback
       if (score >= 90) return 'A';
       if (score >= 80) return 'B';
       if (score >= 70) return 'C';
@@ -410,6 +438,7 @@
       return 'F';
     }
 
+    box = null;
     function calculateBlendedCourseGrade(course) {
       var totalEarned = 0;
       var totalPossible = 0;
@@ -434,7 +463,6 @@
         });
       }
 
-      // Check if this course should be calculated on a 4-point scale
       var isFourPoint = false;
       if (course.raw && !isNaN(parseFloat(course.raw)) && parseFloat(course.raw) <= 5.0) {
         isFourPoint = true;
@@ -449,7 +477,6 @@
       }
 
       if (isFourPoint) {
-        // Evaluate as a continuous linear distribution out of a 4.0 maximum point cap
         var calculatedGpaValue = totalPossible > 0 ? ((totalEarned / totalPossible) * 4).toFixed(2) : "0.00";
         return {
           letter: determineLetterGrade(parseFloat(calculatedGpaValue)),
@@ -457,7 +484,6 @@
           isFourPoint: true
         };
       } else {
-        // Traditional percentage multiplier
         var calculatedPercentage = totalPossible > 0 ? ((totalEarned / totalPossible) * 100).toFixed(2) : "0.00";
         return {
           letter: determineLetterGrade(parseFloat(calculatedPercentage)),
