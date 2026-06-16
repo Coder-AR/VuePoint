@@ -12,12 +12,18 @@ function parse(data) {
   return typeof data === 'string' ? JSON.parse(data) : data;
 }
 
+// Upgraded to handle case-insensitivity, varied keys, and nested text object nodes
 function fuzzyFind(obj, keywords) {
-  if (!obj) return 'N/A';
+  if (!obj || typeof obj !== 'object') return 'N/A';
   for (const kw of keywords) {
     const foundKey = Object.keys(obj).find(k => k.toLowerCase().includes(kw.toLowerCase()));
-    if (foundKey && obj[foundKey]) {
-      return obj[foundKey];
+    if (foundKey && obj[foundKey] !== undefined && obj[foundKey] !== null) {
+      const val = obj[foundKey];
+      if (typeof val === 'object') {
+        const leaf = val.Value || val['@_Value'] || val['#text'] || val.Text;
+        if (leaf && typeof leaf !== 'object') return leaf;
+      }
+      return val;
     }
   }
   return 'N/A';
@@ -51,7 +57,7 @@ function findGPADeep(obj) {
     if (val === null || val === undefined) continue;
     if (key.toLowerCase().includes('gpa')) {
       if (typeof val !== 'object') return val; 
-      const leaf = val.Value || val['@_Value'] || val.Score || val['@_Score'] || val['#text'];
+      const leaf = val.Value || val['@_Value'] || val['#text'];
       if (leaf && typeof leaf !== 'object') return leaf;
       const innerFound = findGPADeep(val);
       if (innerFound) return innerFound;
@@ -133,28 +139,37 @@ app.post('/api/login', async (req, res) => {
       };
     }
 
-    // 2. FIXED CONTENT: Fetch Schedule XML/JSON Data with correct root element
+    // 2. Fetch Schedule Data
     let schedule = [];
     try {
       const scheduleData = await client.getSchedule();
       const parsedSchedule = parse(scheduleData);
       
-      // Target 'StudentClassSchedule' instead of 'Schedule'
       const classListing = parsedSchedule?.StudentClassSchedule?.ClassLists?.ClassListing;
       
       if (classListing) {
         const list = Array.isArray(classListing) ? classListing : [classListing];
-        schedule = list.map(c => ({
-          period:  c.Period      || c['@_Period']      || '?',
-          course:  c.CourseTitle || c['@_CourseTitle'] || 'Unknown',
-          room:    c.RoomNum     || c['@_RoomNum']     || 'N/A',
-          teacher: c.TeacherName || c['@_TeacherName'] || 'Unknown'
-        }));
-        // Sort courses logically ascending by period number
+        
+        // Using adaptive fuzzy search for resilient schedule parsing
+        schedule = list.map(c => {
+          const roomVal = fuzzyFind(c, ['room', 'rm']);
+          const teacherVal = fuzzyFind(c, ['teacher', 'staff', 'instructor']);
+          const courseVal = fuzzyFind(c, ['title', 'course']);
+          const periodVal = fuzzyFind(c, ['period', 'per']);
+
+          return {
+            period:  periodVal !== 'N/A' ? periodVal : '?',
+            course:  courseVal !== 'N/A' ? courseVal : 'Unknown',
+            room:    roomVal !== 'N/A' ? roomVal : 'N/A',
+            teacher: teacherVal !== 'N/A' ? teacherVal : 'Unknown'
+          };
+        });
+        
+        // Sort courses chronologically by period
         schedule.sort((a, b) => String(a.period).localeCompare(String(b.period), undefined, {numeric: true}));
       }
     } catch (e) {
-      console.warn("Class schedule extraction failed or wasn't published:", e.message);
+      console.warn("Class schedule extraction failed:", e.message);
     }
 
     // 3. Fetch Grades & GPA
