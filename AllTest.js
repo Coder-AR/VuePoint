@@ -133,12 +133,15 @@ app.post('/api/login', async (req, res) => {
       };
     }
 
-    // 2. NEW CONTENT: Fetch Schedule XML/JSON Data
+    // 2. FIXED CONTENT: Fetch Schedule XML/JSON Data with correct root element
     let schedule = [];
     try {
       const scheduleData = await client.getSchedule();
       const parsedSchedule = parse(scheduleData);
-      const classListing = parsedSchedule?.Schedule?.ClassLists?.ClassListing;
+      
+      // Target 'StudentClassSchedule' instead of 'Schedule'
+      const classListing = parsedSchedule?.StudentClassSchedule?.ClassLists?.ClassListing;
+      
       if (classListing) {
         const list = Array.isArray(classListing) ? classListing : [classListing];
         schedule = list.map(c => ({
