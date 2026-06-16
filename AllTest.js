@@ -77,10 +77,26 @@ function calculateTermGPAManually(grades) {
   let gradedClassesCount = 0;
   for (const course of grades) {
     if (!course.grade) continue;
-    const baseLetter = course.grade.trim().charAt(0).toUpperCase();
-    if (baseLetter in gradeScale) {
-      totalPoints += gradeScale[baseLetter];
-      gradedClassesCount++;
+    const trimmedGrade = course.grade.trim();
+    const numericGrade = parseFloat(trimmedGrade);
+    if (!isNaN(numericGrade)) {
+      if (numericGrade <= 5.0) {
+        totalPoints += numericGrade;
+        gradedClassesCount++;
+      } else {
+        if (numericGrade >= 90) totalPoints += 4.0;
+        else if (numericGrade >= 80) totalPoints += 3.0;
+        else if (numericGrade >= 70) totalPoints += 2.0;
+        else if (numericGrade >= 60) totalPoints += 1.0;
+        else totalPoints += 0.0;
+        gradedClassesCount++;
+      }
+    } else {
+      const baseLetter = trimmedGrade.charAt(0).toUpperCase();
+      if (baseLetter in gradeScale) {
+        totalPoints += gradeScale[baseLetter];
+        gradedClassesCount++;
+      }
     }
   }
   return gradedClassesCount > 0 ? (totalPoints / gradedClassesCount).toFixed(2) : 'N/A';
