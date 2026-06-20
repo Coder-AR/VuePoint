@@ -438,47 +438,51 @@
       return 'F';
     }
 
-    function calculateBlendedCourseGrade(course) {
-  // NEW LOGIC: If no mocks have been added, return the original server data
-  // to avoid recalculating and "breaking" the accuracy of the displayed grade.
-  if (!course.mockAssignments || course.mockAssignments.length === 0) {
-    return { letter: course.grade || 'N/A', percentage: course.raw || 'N/A' };
-  }
+  function calculateBlendedCourseGrade(course) {
+    // If no mocks, return raw server data to keep the 4.0 scale intact
+    if (!course.mockAssignments || course.mockAssignments.length === 0) {
+      return { letter: course.grade || 'N/A', percentage: course.raw || 'N/A' };
+    }
 
-  // If we are here, a mock assignment exists, so perform the simulation math
-  var totalEarned = 0;
-  var totalPossible = 0;
-  var validPointsFound = false;
-
-  // Use existing assignments
-  if (course.assignments) {
-    course.assignments.forEach(function(a) {
-      var parsed = parseScoreString(a.score);
-      if (parsed) {
-        totalEarned += parsed.earned;
-        totalPossible += parsed.possible;
-        validPointsFound = true;
-      }
+    // Calculate logic
+    var totalEarned = 0;
+    var totalPossible = 0;
+    
+    // 1. Gather all points
+    if (course.assignments) {
+      course.assignments.forEach(function(a) {
+        var parsed = parseScoreString(a.score); // Assuming this helper exists
+        if (parsed) {
+          totalEarned += parsed.earned;
+          totalPossible += parsed.possible;
+        }
+      });
+    }
+    course.mockAssignments.forEach(function(m) {
+      totalEarned += m.earned;
+      totalPossible += m.possible;
     });
+
+    // 2. DETECT SCALE: Is this a 4-point class? 
+    // If the total possible points are low (e.g., <= 10), it's likely a 4-point scale.
+    var isFourPointScale = totalPossible > 0 && totalPossible <= 10;
+
+    if (isFourPointScale) {
+      // Calculate on 4-point scale
+      var calculated4Point = (totalEarned / totalPossible) * 4;
+      return { 
+        letter: calculated4Point.toFixed(2), 
+        percentage: calculated4Point.toFixed(2) 
+      };
+    } else {
+      // Calculate on 100% scale
+      var calculatedPercentage = totalPossible > 0 ? ((totalEarned / totalPossible) * 100).toFixed(2) : "0.00";
+      return {
+        letter: determineLetterGrade(parseFloat(calculatedPercentage)), // Uses your existing scale
+        percentage: calculatedPercentage + "%"
+      };
+    }
   }
-
-  // Add mock assignments
-  course.mockAssignments.forEach(function(m) {
-    totalEarned += m.earned;
-    totalPossible += m.possible;
-    validPointsFound = true;
-  });
-
-  if (!validPointsFound) {
-    return { letter: course.grade || 'N/A', percentage: course.raw || 'N/A' };
-  }
-
-  var calculatedPercentage = totalPossible > 0 ? ((totalEarned / totalPossible) * 100).toFixed(2) : "0.00";
-  return {
-    letter: determineLetterGrade(parseFloat(calculatedPercentage)),
-    percentage: calculatedPercentage
-  };
-}
 
     function viewCourseAssignments(courseIndex) {
       window.currentSelectedCourseIndex = courseIndex;
