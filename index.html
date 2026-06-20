@@ -439,50 +439,55 @@
     }
 
   function calculateBlendedCourseGrade(course) {
-    // If no mocks, return raw server data to keep the 4.0 scale intact
-    if (!course.mockAssignments || course.mockAssignments.length === 0) {
-      return { letter: course.grade || 'N/A', percentage: course.raw || 'N/A' };
-    }
+  // 1. Identify the scale: Look at the existing grade/raw score from the server
+  // If the "raw" value is a low number (e.g., 4.0, 3.8), it's a GPA scale.
+  // We check if the raw value contains a decimal and is less than 6.0.
+  const rawVal = parseFloat(course.raw);
+  const isGpaScale = !isNaN(rawVal) && rawVal <= 6.0 && course.raw.includes('.');
 
-    // Calculate logic
-    var totalEarned = 0;
-    var totalPossible = 0;
-    
-    // 1. Gather all points
-    if (course.assignments) {
-      course.assignments.forEach(function(a) {
-        var parsed = parseScoreString(a.score); // Assuming this helper exists
-        if (parsed) {
-          totalEarned += parsed.earned;
-          totalPossible += parsed.possible;
-        }
-      });
-    }
-    course.mockAssignments.forEach(function(m) {
-      totalEarned += m.earned;
-      totalPossible += m.possible;
-    });
-
-    // 2. DETECT SCALE: Is this a 4-point class? 
-    // If the total possible points are low (e.g., <= 10), it's likely a 4-point scale.
-    var isFourPointScale = totalPossible > 0 && totalPossible <= 10;
-
-    if (isFourPointScale) {
-      // Calculate on 4-point scale
-      var calculated4Point = (totalEarned / totalPossible) * 4;
-      return { 
-        letter: calculated4Point.toFixed(2), 
-        percentage: calculated4Point.toFixed(2) 
-      };
-    } else {
-      // Calculate on 100% scale
-      var calculatedPercentage = totalPossible > 0 ? ((totalEarned / totalPossible) * 100).toFixed(2) : "0.00";
-      return {
-        letter: determineLetterGrade(parseFloat(calculatedPercentage)), // Uses your existing scale
-        percentage: calculatedPercentage + "%"
-      };
-    }
+  // 2. If no mock assignments, return the original data immediately
+  if (!course.mockAssignments || course.mockAssignments.length === 0) {
+    return { letter: course.grade, percentage: course.raw };
   }
+
+  // 3. Gather all points
+  var totalEarned = 0;
+  var totalPossible = 0;
+  
+  if (course.assignments) {
+    course.assignments.forEach(function(a) {
+      var parsed = parseScoreString(a.score);
+      if (parsed) {
+        totalEarned += parsed.earned;
+        totalPossible += parsed.possible;
+      }
+    });
+  }
+
+  course.mockAssignments.forEach(function(m) {
+    totalEarned += m.earned;
+    totalPossible += m.possible;
+  });
+
+  // 4. Calculate based on detected scale
+  if (totalPossible === 0) return { letter: course.grade, percentage: course.raw };
+
+  if (isGpaScale) {
+    // GPA Math: (Earned / Possible) * 4.0 scale
+    var gpaResult = (totalEarned / totalPossible) * 4.0;
+    return { 
+      letter: gpaResult.toFixed(2), 
+      percentage: gpaResult.toFixed(2) 
+    };
+  } else {
+    // Percentage Math: (Earned / Possible) * 100
+    var percentResult = (totalEarned / totalPossible) * 100;
+    return {
+      letter: determineLetterGrade(percentResult), // Uses your existing grading scale function
+      percentage: percentResult.toFixed(2) + "%"
+    };
+  }
+}
 
     function viewCourseAssignments(courseIndex) {
       window.currentSelectedCourseIndex = courseIndex;
