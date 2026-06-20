@@ -5,109 +5,58 @@
   <title>VuePoint Portal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    /* Theme Color Definitions */
-    :root {
-      --bg-color: #f4f6f9;
-      --text-color: #333333;
-      --box-bg: #ffffff;
-      --box-border: #e1e4e8;
-      --heading-color: #1e293b;
-      --label-color: #475569;
-      --input-bg: #ffffff;
-      --input-border: #cbd5e1;
-      --input-text: #333333;
-      --modal-overlay: rgba(0, 0, 0, 0.5);
-    }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; background: #f4f6f9; color: #333; }
+    .box { border: 1px solid #e1e4e8; padding: 25px; margin-bottom: 20px; border-radius: 12px; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    h2, h3 { margin-top: 0; color: #1e293b; }
+    label { font-weight: 600; font-size: 14px; color: #475569; display: block; margin-bottom: 5px; }
+    input, select, button { padding: 10px; margin: 5px 0 15px 0; width: 100%; box-sizing: border-box; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 15px; }
+    input:focus, select:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+    button { background: #2563eb; color: white; border: none; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+    button:hover { background: #1d4ed8; }
 
-    [data-theme="dark"] {
-      --bg-color: #0f172a;
-      --text-color: #f1f5f9;
-      --box-bg: #1e293b;
-      --box-border: #334155;
-      --heading-color: #f8fafc;
-      --label-color: #94a3b8;
-      --input-bg: #0f172a;
-      --input-border: #475569;
-      --input-text: #f1f5f9;
-      --modal-overlay: rgba(0, 0, 0, 0.75);
-    }
+    .student-card { display: flex; align-items: center; gap: 20px; background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; padding: 20px; border-radius: 12px; margin-bottom: 25px; }
+    .student-details h3 { margin: 0 0 5px 0; color: white; font-size: 22px; }
+    .student-details p { margin: 2px 0; opacity: 0.9; font-size: 14px; }
 
-    /* Core Layout Styles using Variables */
-    body { 
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-      max-width: 800px; 
-      margin: 40px auto; 
-      padding: 20px; 
-      background: var(--bg-color); 
-      color: var(--text-color); 
-      transition: background 0.3s ease, color 0.3s ease;
-    }
-    
-    .box { 
-      border: 1px solid var(--box-border); 
-      padding: 25px; 
-      margin-bottom: 20px; 
-      border-radius: 12px; 
-      background: var(--box-bg); 
-      box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
-      transition: background 0.3s ease, border-color 0.3s ease;
-    }
-    
-    h2, h3 { margin-top: 0; color: var(--heading-color); }
-    label { font-weight: 600; font-size: 14px; color: var(--label-color); display: block; margin-bottom: 5px; }
-    
-    input, select { 
-      padding: 10px; 
-      margin: 5px 0 15px 0; 
-      width: 100%; 
-      box-sizing: border-box; 
-      border-radius: 6px; 
-      border: 1px solid var(--input-border); 
-      background: var(--input-bg);
-      color: var(--input-text);
-      font-size: 15px; 
-    }
-    
-    input:focus, select:focus { 
-      outline: none; 
-      border-color: #3b82f6; 
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); 
-    }
+    .table-container { width: 100%; overflow-x: auto; background: white; border-radius: 12px; border: 1px solid #e1e4e8; margin-bottom: 25px; }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { background: #f8fafc; padding: 14px; font-weight: 600; color: #64748b; border-bottom: 1px solid #e2e8f0; font-size: 13px; text-transform: uppercase; }
+    td { padding: 14px; border-bottom: 1px solid #f1f5f9; font-size: 15px; }
+    tr:last-child td { border-bottom: none; }
 
-    /* Theme Toggle Button Style */
-    .theme-toggle-btn {
-      float: right;
-      width: auto;
-      margin: 0 0 20px 0;
-      padding: 8px 14px;
-      cursor: pointer;
-      background: var(--box-bg);
-      color: var(--text-color);
-      border: 1px solid var(--box-border);
-      border-radius: 20px;
-      font-size: 14px;
-      font-weight: 500;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-      transition: background 0.2s, color 0.2s;
-    }
-    
-    .theme-toggle-btn:hover {
-      background: var(--input-border);
-    }
+    .clickable-row { cursor: pointer; transition: background-color 0.15s ease; }
+    .clickable-row:hover { background-color: #f8fafc; }
 
-    /* Modal Context Updates for Dark Mode Support */
-    #assignmentModal {
-      background: var(--modal-overlay) !important;
-    }
-    #assignmentModal > div {
-      background: var(--box-bg) !important;
-      color: var(--text-color) !important;
-      border: 1px solid var(--box-border);
-    }
+    .period-badge { background: #f1f5f9; color: #475569; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 13px; }
+    .grade-badge { font-weight: 700; padding: 4px 10px; border-radius: 6px; display: inline-block; }
+    .grade-good    { background: #dcfce7; color: #15803d; }
+    .grade-warning { background: #fef9c3; color: #a16207; }
+    .grade-danger  { background: #fee2e2; color: #b91c1c; }
+    .unread-dot { display: inline-block; width: 8px; height: 8px; background: #2563eb; border-radius: 50%; margin-right: 6px; }
+
+    .loading { text-align: center; color: #64748b; font-weight: 500; padding: 40px; }
+
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
+    .modal-window { background: white; padding: 25px; border-radius: 14px; max-width: 700px; width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); position: relative; }
+    .modal-close { position: absolute; top: 18px; right: 20px; font-size: 22px; cursor: pointer; color: #94a3b8; font-weight: bold; transition: color 0.15s; }
+    .modal-close:hover { color: #334155; }
+    .assignment-type-tag { font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: #e2e8f0; color: #475569; text-transform: uppercase; display: inline-block; margin-top: 4px; }
+    
+    .mock-tag { background: #feebc8; color: #c05621; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-left: 5px; text-transform: uppercase; }
+    .mock-row { background-color: #fffbeb; }
+    .delete-mock-btn { background: none; border: none; color: #dc2626; font-size: 12px; cursor: pointer; padding: 0; text-decoration: underline; margin-top: 4px; font-weight: 500; display: block; }
+    .delete-mock-btn:hover { color: #991b1b; }
+    .grade-comparison-box { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0; font-size: 15px; }
+    .simulator-panel { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+    .simulator-grid { display: grid; grid-template-columns: 2fr 1.5fr 1.5fr 1fr; gap: 10px; align-items: flex-end; }
+    .simulator-grid label { margin-bottom: 2px; font-size: 12px; }
+    .simulator-grid input, .simulator-grid select, .simulator-grid button { margin: 0; padding: 7px; font-size: 13px; height: 36px; }
+    .simulator-grid button { background: #16a34a; }
+    .simulator-grid button:hover { background: #15803d; }
+    @media (max-width: 600px) { .simulator-grid { grid-template-columns: 1fr; gap: 10px; } }
   </style>
 </head>
 <body>
-  <button id="themeToggleBtn" class="theme-toggle-btn" onclick="toggleTheme()">🌙 Dark Mode</button>
   <h2>VuePoint Portal</h2>
 
   <div class="box" id="step1">
@@ -672,31 +621,6 @@
         pdfBtn.disabled = false;
       }
     }
-
-    // Theme Toggling Logic
-    function toggleTheme() {
-      const currentTheme = document.documentElement.getAttribute('data-theme');
-      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', newTheme);
-      localStorage.setItem('theme', newTheme);
-      updateThemeButton(newTheme);
-    }
-
-    function updateThemeButton(theme) {
-      const btn = document.getElementById('themeToggleBtn');
-      if (btn) {
-        btn.innerHTML = theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
-      }
-    }
-
-    // Inline self-invoking function to load theme instantly and avoid a white screen flash
-    (function() {
-      const savedTheme = localStorage.getItem('theme') || 'light';
-      document.documentElement.setAttribute('data-theme', savedTheme);
-      window.addEventListener('DOMContentLoaded', () => {
-        updateThemeButton(savedTheme);
-      });
-    })();
   </script>
 </body>
 </html>
