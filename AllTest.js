@@ -261,10 +261,7 @@ app.post('/api/report-card/download', async (req, res) => {
     const parsedDocument = parse(rawDocumentXML);
     const reportCardData = parsedDocument?.ReportCards?.ReportCardsList?.ReportCard;
     if (!reportCardData) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Your school has not published an official PDF report card for this term yet. This usually happens at the very end of the grading period. Please check back later!" 
-      });
+      return res.status(404).json({ success: false, message: "No official PDF report cards published by administration yet." });
     }
     const targetDoc = Array.isArray(reportCardData) ? reportCardData[0] : reportCardData;
     const base64PDF = targetDoc?.Base64DocumentData || targetDoc['@_Base64DocumentData'];

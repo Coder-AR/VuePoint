@@ -833,8 +833,7 @@
 
         if (!response.ok) {
           var errData = await response.json();
-          // Removed the scary "Error: " prefix
-          alert(errData.message || "Could not retrieve the document. Please try again later.");
+          alert("Error: " + (errData.message || "Could not retrieve document."));
           return;
         }
 
