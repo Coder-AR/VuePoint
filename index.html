@@ -439,39 +439,46 @@
     }
 
     function calculateBlendedCourseGrade(course) {
-      var totalEarned = 0;
-      var totalPossible = 0;
-      var validPointsFound = false;
+  // NEW LOGIC: If no mocks have been added, return the original server data
+  // to avoid recalculating and "breaking" the accuracy of the displayed grade.
+  if (!course.mockAssignments || course.mockAssignments.length === 0) {
+    return { letter: course.grade || 'N/A', percentage: course.raw || 'N/A' };
+  }
 
-      if (course.assignments) {
-        course.assignments.forEach(function(a) {
-          var parsed = parseScoreString(a.score);
-          if (parsed) {
-            totalEarned += parsed.earned;
-            totalPossible += parsed.possible;
-            validPointsFound = true;
-          }
-        });
+  // If we are here, a mock assignment exists, so perform the simulation math
+  var totalEarned = 0;
+  var totalPossible = 0;
+  var validPointsFound = false;
+
+  // Use existing assignments
+  if (course.assignments) {
+    course.assignments.forEach(function(a) {
+      var parsed = parseScoreString(a.score);
+      if (parsed) {
+        totalEarned += parsed.earned;
+        totalPossible += parsed.possible;
+        validPointsFound = true;
       }
+    });
+  }
 
-      if (course.mockAssignments) {
-        course.mockAssignments.forEach(function(m) {
-          totalEarned += m.earned;
-          totalPossible += m.possible;
-          validPointsFound = true;
-        });
-      }
+  // Add mock assignments
+  course.mockAssignments.forEach(function(m) {
+    totalEarned += m.earned;
+    totalPossible += m.possible;
+    validPointsFound = true;
+  });
 
-      if (!validPointsFound) {
-        return { letter: course.grade || 'N/A', percentage: course.raw || 'N/A' };
-      }
+  if (!validPointsFound) {
+    return { letter: course.grade || 'N/A', percentage: course.raw || 'N/A' };
+  }
 
-      var calculatedPercentage = totalPossible > 0 ? ((totalEarned / totalPossible) * 100).toFixed(2) : "0.00";
-      return {
-        letter: determineLetterGrade(parseFloat(calculatedPercentage)),
-        percentage: calculatedPercentage
-      };
-    }
+  var calculatedPercentage = totalPossible > 0 ? ((totalEarned / totalPossible) * 100).toFixed(2) : "0.00";
+  return {
+    letter: determineLetterGrade(parseFloat(calculatedPercentage)),
+    percentage: calculatedPercentage
+  };
+}
 
     function viewCourseAssignments(courseIndex) {
       window.currentSelectedCourseIndex = courseIndex;
